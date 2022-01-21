@@ -1,0 +1,49 @@
+---
+layout: post
+title:  "我的github.io是怎么搭的"
+date:   2022-01-21 23:00:02 +0800
+categories: 指南
+---
+
+如果你嫌弃国内博客站点的各种广告，并且不想花钱租服务器挂自己的博客站点，那么github.io是一个不错的选择。
+
+本文将介绍github.io如何快速上手。
+
+## 快速上手
+
+### 本地环境搭建
+
+环境要求：
+ - wsl2（支持在windows环境下运行linux，安装方法见这里：https://docs.microsoft.com/en-us/windows/wsl/install）
+
+> 为什么需要wsl2？
+> 
+> 因为github.io依赖于jekyll（一个能够将markdown转化为html的软件），官方教程多以linux环境介绍，故使用wsl2将会很直接，避免折腾windows环境。
+
+```bash
+sudo gem install rails
+sudo gem install jekyll bundler
+cd ~/Sites
+jekyll new <foldername> # 生成博客脚手架
+cd <foldername>
+bundle install
+bundle exec jekyll serve
+```
+至此可登录http://127.0.0.1:4000/站点验证是否博客是否可访问。
+
+### 新增博客
+
+直接在`_posts`文件夹中添加你的markdown即可。注意这里有几点约定：
+1. markdown文件名命名：需要按`2022-01-16-welcome-to-jekyll`这种格式进行
+2. markdown文件内容需加一个头部信息：
+
+```markdown
+---
+layout: post
+title:  "Welcome to Jekyll!"
+date:   2022-01-16 23:53:02 +0800
+categories: jekyll update
+---
+
+... 从这里开始写你的具体内容 ...
+```
