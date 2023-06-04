@@ -18,13 +18,13 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: DeepWhite
-email: wtengda0816@163.com
+title: 吴言吴语
+email: wtengda0816@outlook.com
 description: >- # this means to ignore newlines until "baseurl:"
-  dd if=/dev/zero of=/dev/null
+  春种一粒粟，秋收万颗籽
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-github_username:  stavewu
+github_username:  StaveWu
 
 # Build settings
 theme: minima
