@@ -1,0 +1,805 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="/jekyll-theme-yat/feed.xml" rel="self" type="application/atom+xml" /><link href="/jekyll-theme-yat/" rel="alternate" type="text/html" /><updated>2023-10-06T14:18:04+00:00</updated><id>/jekyll-theme-yat/feed.xml</id><title type="html">吴言吴语</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><author><name>StaveWu</name></author><entry><title type="html">编程语言源</title><link href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html" rel="alternate" type="text/html" title="编程语言源" /><published>2023-09-02T15:00:02+00:00</published><updated>2023-09-02T15:00:02+00:00</updated><id>/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90</id><content type="html" xml:base="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html"><![CDATA[<h1 id="编程语言源">编程语言源</h1>
+
+<h2 id="概述">概述</h2>
+
+<p>本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？</p>
+
+<h2 id="python">python</h2>
+
+<h3 id="自定义包上传官方源">自定义包上传官方源</h3>
+
+<p>自定义包上传到pypi的教程：<a href="https://packaging.python.org/en/latest/tutorials/packaging-projects/">Packaging Python Projects — Python Packaging User Guide</a></p>
+
+<p>通过twine命令。</p>
+
+<p>有两点需要注意：</p>
+
+<p>1、需要设置2FA验证后才能生成token。</p>
+
+<p>什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。</p>
+
+<p>腾讯小程序有一个比较好用的： Authentic</p>
+
+<p>2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ERROR    HTTPError: 403 Forbidden from https://test.pypi.org/legacy/               
+         The user <span class="s1">'wutengda'</span> isn<span class="s1">'t allowed to upload to project                    
+         '</span>example-package-testing<span class="s1">'. See https://test.pypi.org/help/#project-name   
+         for more information. 
+</span></code></pre></div></div>
+
+<p>上传成功后，就可以使用该命令安装：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>venv<span class="o">)</span> wutengda@wutengda:~/packaging_tutorial<span class="nv">$ </span>pip <span class="nb">install </span>example-package-wutengda
+ 
+Collecting example-package-wutengda
+  Downloading example_package_wutengda-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+Installing collected packages: example-package-wutengda
+Successfully installed example-package-wutengda-0.0.1
+</code></pre></div></div>
+
+<p>场景思考：</p>
+
+<p>对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？</p>
+
+<p>方式1：理想的，推动pytorch社区合入发布联合编译版本</p>
+
+<p>方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称</p>
+
+<p>方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑：</p>
+
+<ul>
+  <li>是否允许采用pytorch命名？</li>
+  <li>当联合编译版本依赖其他包时，是否允许跨仓库关联解决？</li>
+</ul>
+
+<h3 id="自定义私有源">自定义私有源</h3>
+
+<p>参考：<a href="https://testdriven.io/blog/private-pypi/">Setting up a Private PyPI Server</a></p>
+
+<p>安装pypiserver</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install </span>pypiserver
+<span class="nb">cd</span> &lt;dir-for-host-pypi&gt;
+pypi-server run <span class="nt">-a</span> <span class="nb">.</span> <span class="nt">-P</span> <span class="nb">.</span>
+</code></pre></div></div>
+
+<p>拉起成功后，可登录：localhost:8080</p>
+
+<p><code class="language-plaintext highlighter-rouge">-a . -P .</code>表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。</p>
+
+<p>在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。</p>
+
+<p>上传成功后，即可访问http://localhost:8080/simple查看已上传的包。</p>
+
+<p>如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># requirements.txt</span>
+example-package-wutengda<span class="o">==</span>0.0.1  <span class="c"># 在官方pypi源</span>
+use-example-priv<span class="o">==</span>0.0.1  <span class="c"># 在本地localhost:8080/simple私有源</span>
+</code></pre></div></div>
+
+<p>安装前清理cache：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip cache purge
+</code></pre></div></div>
+
+<p>此时执行：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>venv<span class="o">)</span> wutengda@wutengda:~/test<span class="nv">$ </span>pip <span class="nb">install</span> <span class="nt">--index-url</span> http://localhost:8080 <span class="nt">--trusted-host</span><span class="o">=</span>localhost:8080 <span class="nt">-r</span> requirements.txt
+Looking <span class="k">in </span>indexes: http://localhost:8080
+Collecting example-package-wutengda<span class="o">==</span>0.0.1
+  Downloading example_package_wutengda-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+DEPRECATION: The HTML index page being used <span class="o">(</span>http://localhost:8080/simple/use-example-priv/<span class="o">)</span> is not a proper HTML 5 document. This is <span class="k">in </span>violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825
+Collecting use-example-priv<span class="o">==</span>0.0.1
+  Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+Installing collected packages: use-example-priv, example-package-wutengda
+Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1
+</code></pre></div></div>
+
+<p>可以正常安装， 不过会有一个DEPRECATION。</p>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。</p>
+
+<h2 id="java">java</h2>
+
+<h3 id="自定义包上传maven源">自定义包上传maven源</h3>
+
+<p>参考：<a href="https://maven.apache.org/repository/">Maven – Maven Central Repository (apache.org)</a></p>
+
+<p>为jar包生成gpgkey：<a href="https://central.sonatype.org/publish/requirements/gpg/#distributing-your-public-key">Working with PGP Signatures - The Central Repository Documentation (sonatype.org)</a></p>
+
+<p>提交jar包到中央仓库：</p>
+
+<ul>
+  <li>
+    <p>apache项目都提交到这里：<a href="https://repository.apache.org/">Nexus Repository Manager (apache.org)</a></p>
+  </li>
+  <li>
+    <p>其他项目提交到OSSRH：<a href="https://central.sonatype.org/publish/publish-guide/">OSSRH Guide - The Central Repository Documentation (sonatype.org)</a></p>
+  </li>
+</ul>
+
+<p>对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id）</p>
+
+<p>对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：<a href="https://central.sonatype.org/publish/requirements/coordinates/#choose-your-coordinates">Choosing your Coordinates - The Central Repository Documentation (sonatype.org)</a>）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。</p>
+
+<p>这部分细节处理可参考：<a href="https://index1024.gitee.io/xblog/release-jar-to-mvn-centeral-repo/">发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io)</a></p>
+
+<p><img src="/assets/images/编程语言源/image-20230929231952522.png" alt="image-20230929231952522" /></p>
+
+<p>现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/</p>
+
+<p>准备jar包，pom.xml文件按照以下两个指南编写：</p>
+
+<ul>
+  <li>最基本的包信息配置：<a href="https://central.sonatype.org/publish/requirements/#create-a-ticket-with-sonatype">Requirements - The Central Repository Documentation (sonatype.org)</a></li>
+  <li>用于一键上传到maven repository的配置：<a href="https://central.sonatype.org/publish/publish-maven/#performing-a-release-deployment">Apache Maven - The Central Repository Documentation (sonatype.org)</a></li>
+</ul>
+
+<p>准备好后，使能编译：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mvn clean deploy
+</code></pre></div></div>
+
+<blockquote>
+  <p>java17版本在deploy阶段存在编译错误：<a href="https://stackoverflow.com/questions/68974753/unable-to-make-field-private-final-java-util-comparator-java-util-treemap-compar">selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow</a></p>
+
+  <p>可采用降版本为java8规避。</p>
+</blockquote>
+
+<p>如成功，将在OOSRH包管理网站上查询到staging profile信息：</p>
+
+<p><img src="/assets/images/编程语言源/image-20230930004122812.png" alt="image-20230930004122812" /></p>
+
+<blockquote>
+  <p>虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to <a href="https://search.maven.org/">search</a> can take up to four hours.</p>
+
+  <p>实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包：</p>
+
+  <p><img src="/assets/images/编程语言源/image-20231001174057638.png" alt="image-20231001174057638" /></p>
+</blockquote>
+
+<p><strong>兼容性结论：</strong></p>
+
+<ol>
+  <li>maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去</li>
+  <li>如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。</li>
+</ol>
+
+<h3 id="自定义maven源">自定义maven源</h3>
+
+<p>自定义maven源可以使用sonatypes nexus：<a href="https://zhuanlan.zhihu.com/p/544089278">Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com)</a></p>
+
+<p>从上一章节讨论：</p>
+
+<ol>
+  <li>nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里</li>
+  <li>有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等</li>
+</ol>
+
+<p>该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见<a href="https://help.sonatype.com/repomanager3/using-nexus-repository/uploading-components">Uploading Components (sonatype.com)</a>。</p>
+
+<p>nexus本身是开源的：<a href="https://github.com/sonatype/nexus-public">GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror</a></p>
+
+<h2 id="go">go</h2>
+
+<p>参考：<a href="https://go.dev/blog/using-go-modules">Using Go Modules - The Go Programming Language</a></p>
+
+<p>类似maven这种包管理工具在go里面是go mod</p>
+
+<p>go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include</p>
+
+<p>以k8s为例，<a href="https://github.com/kubernetes/kubernetes">k8s仓库</a>中存在一份go.mod，打开可以看到其require方式为url：</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// This is a generated file. Do not edit directly.</span>
+<span class="c">// Ensure you've carefully read</span>
+<span class="c">// https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md</span>
+<span class="c">// Run hack/pin-dependency.sh to change pinned dependency versions.</span>
+<span class="c">// Run hack/update-vendor.sh to update go.mod files and the vendor directory.</span>
+
+<span class="n">module</span> <span class="n">k8s</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">kubernetes</span>
+
+<span class="k">go</span> <span class="m">1.20</span>
+
+<span class="n">require</span> <span class="p">(</span>
+	<span class="n">bitbucket</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">bertimus9</span><span class="o">/</span><span class="n">systemstat</span> <span class="n">v0</span><span class="m">.5.0</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="n">azure</span><span class="o">-</span><span class="n">sdk</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="k">go</span> <span class="n">v68</span><span class="m">.0.0</span><span class="o">+</span><span class="n">incompatible</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">autorest</span><span class="o">/</span><span class="n">autorest</span> <span class="n">v0</span><span class="m">.11.29</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">autorest</span><span class="o">/</span><span class="n">autorest</span><span class="o">/</span><span class="n">adal</span> <span class="n">v0</span><span class="m">.9.23</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">GoogleCloudPlatform</span><span class="o">/</span><span class="n">k8s</span><span class="o">-</span><span class="n">cloud</span><span class="o">-</span><span class="n">provider</span> <span class="n">v1</span><span class="m">.18.1</span><span class="o">-</span><span class="m">0.20220218231025</span><span class="o">-</span><span class="n">f11817397a1b</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">JeffAshton</span><span class="o">/</span><span class="n">win_pdh</span> <span class="n">v0</span><span class="m">.0.0</span><span class="o">-</span><span class="m">20161109143554</span><span class="o">-</span><span class="m">76</span><span class="n">bb4ee9f0ab</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Microsoft</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">winio</span> <span class="n">v0</span><span class="m">.6.0</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Microsoft</span><span class="o">/</span><span class="n">hcsshim</span> <span class="n">v0</span><span class="m">.8.25</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。</p>
+
+<h2 id="js">js</h2>
+
+<p>参考：</p>
+
+<ul>
+  <li>
+    <p><a href="https://docs.npmjs.com/creating-and-publishing-scoped-public-packages">Creating and publishing scoped public packages</a></p>
+  </li>
+  <li>
+    <p><a href="https://juejin.cn/post/7039140144250617887">超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn)</a></p>
+  </li>
+</ul>
+
+<p>js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：<code class="language-plaintext highlighter-rouge">@xxx/hello-world</code>），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。</p>
+
+<p>因为在npm发布时要求必须要首先登录npm：<code class="language-plaintext highlighter-rouge">npm login</code>，所以不会出现私人包覆盖官方包的情况。</p>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。</p>
+
+<h2 id="rust">rust</h2>
+
+<p>rust是有中央仓库的：<a href="https://crates.io/">crates.io: Rust Package Registry</a></p>
+
+<h2 id="ruby">ruby</h2>
+
+<p>ruby也有中央仓库托管各种包：<a href="https://rubygems.org/">RubyGems.org</a></p>]]></content><author><name>StaveWu</name></author><category term="生态" /><category term="兼容性" /><summary type="html"><![CDATA[编程语言源 概述 本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？ python 自定义包上传官方源 自定义包上传到pypi的教程：Packaging Python Projects — Python Packaging User Guide 通过twine命令。 有两点需要注意： 1、需要设置2FA验证后才能生成token。 什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。 腾讯小程序有一个比较好用的： Authentic 2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复： ERROR HTTPError: 403 Forbidden from https://test.pypi.org/legacy/ The user 'wutengda' isn't allowed to upload to project 'example-package-testing'. See https://test.pypi.org/help/#project-name for more information. 上传成功后，就可以使用该命令安装： (venv) wutengda@wutengda:~/packaging_tutorial$ pip install example-package-wutengda Collecting example-package-wutengda Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: example-package-wutengda Successfully installed example-package-wutengda-0.0.1 场景思考： 对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？ 方式1：理想的，推动pytorch社区合入发布联合编译版本 方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称 方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑： 是否允许采用pytorch命名？ 当联合编译版本依赖其他包时，是否允许跨仓库关联解决？ 自定义私有源 参考：Setting up a Private PyPI Server 安装pypiserver pip install pypiserver cd &lt;dir-for-host-pypi&gt; pypi-server run -a . -P . 拉起成功后，可登录：localhost:8080 -a . -P .表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。 在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。 上传成功后，即可访问http://localhost:8080/simple查看已上传的包。 如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例： # requirements.txt example-package-wutengda==0.0.1 # 在官方pypi源 use-example-priv==0.0.1 # 在本地localhost:8080/simple私有源 安装前清理cache： pip cache purge 此时执行： (venv) wutengda@wutengda:~/test$ pip install --index-url http://localhost:8080 --trusted-host=localhost:8080 -r requirements.txt Looking in indexes: http://localhost:8080 Collecting example-package-wutengda==0.0.1 Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) DEPRECATION: The HTML index page being used (http://localhost:8080/simple/use-example-priv/) is not a proper HTML 5 document. This is in violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825 Collecting use-example-priv==0.0.1 Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: use-example-priv, example-package-wutengda Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1 可以正常安装， 不过会有一个DEPRECATION。 兼容性结论： 私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。 java 自定义包上传maven源 参考：Maven – Maven Central Repository (apache.org) 为jar包生成gpgkey：Working with PGP Signatures - The Central Repository Documentation (sonatype.org) 提交jar包到中央仓库： apache项目都提交到这里：Nexus Repository Manager (apache.org) 其他项目提交到OSSRH：OSSRH Guide - The Central Repository Documentation (sonatype.org) 对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id） 对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：Choosing your Coordinates - The Central Repository Documentation (sonatype.org)）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。 这部分细节处理可参考：发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io) 现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/ 准备jar包，pom.xml文件按照以下两个指南编写： 最基本的包信息配置：Requirements - The Central Repository Documentation (sonatype.org) 用于一键上传到maven repository的配置：Apache Maven - The Central Repository Documentation (sonatype.org) 准备好后，使能编译： mvn clean deploy java17版本在deploy阶段存在编译错误：selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow 可采用降版本为java8规避。 如成功，将在OOSRH包管理网站上查询到staging profile信息： 虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to search can take up to four hours. 实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包： 兼容性结论： maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去 如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。 自定义maven源 自定义maven源可以使用sonatypes nexus：Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com) 从上一章节讨论： nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里 有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等 该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见Uploading Components (sonatype.com)。 nexus本身是开源的：GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror go 参考：Using Go Modules - The Go Programming Language 类似maven这种包管理工具在go里面是go mod go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include 以k8s为例，k8s仓库中存在一份go.mod，打开可以看到其require方式为url： // This is a generated file. Do not edit directly. // Ensure you've carefully read // https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md // Run hack/pin-dependency.sh to change pinned dependency versions. // Run hack/update-vendor.sh to update go.mod files and the vendor directory. module k8s.io/kubernetes go 1.20 require ( bitbucket.org/bertimus9/systemstat v0.5.0 github.com/Azure/azure-sdk-for-go v68.0.0+incompatible github.com/Azure/go-autorest/autorest v0.11.29 github.com/Azure/go-autorest/autorest/adal v0.9.23 github.com/GoogleCloudPlatform/k8s-cloud-provider v1.18.1-0.20220218231025-f11817397a1b github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab github.com/Microsoft/go-winio v0.6.0 github.com/Microsoft/hcsshim v0.8.25 ... 兼容性结论： 对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。 js 参考： Creating and publishing scoped public packages 超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn) js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：@xxx/hello-world），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。 因为在npm发布时要求必须要首先登录npm：npm login，所以不会出现私人包覆盖官方包的情况。 兼容性结论： npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。 rust rust是有中央仓库的：crates.io: Rust Package Registry ruby ruby也有中央仓库托管各种包：RubyGems.org]]></summary></entry><entry><title type="html">rpm.spec</title><link href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/07/01/rpm.spec.html" rel="alternate" type="text/html" title="rpm.spec" /><published>2023-07-01T15:00:02+00:00</published><updated>2023-07-01T15:00:02+00:00</updated><id>/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/07/01/rpm.spec</id><content type="html" xml:base="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/07/01/rpm.spec.html"><![CDATA[<h2 id="rpmspec">rpm.spec</h2>
+
+<h3 id="spec依赖检查机制">spec依赖检查机制</h3>
+
+<p>spec文件的依赖是怎么检查的？</p>
+
+<p>编译阶段：通过BuildRequires；运行阶段：通过Requires</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>BuildRequires:  python
+Requires:       python
+</code></pre></div></div>
+
+<p>具体检查方式：</p>
+
+<p>查看rpmbuild源码：<a href="http://ftp.rpm.org/releases/rpm-4.15.x/">Ftp - /releases/rpm-4.15.x/ :: Oregon State University Open Source Lab</a></p>
+
+<p>BuildRequires被解释为使用宏__spec_buildrequires_template：</p>
+
+<p><img src="/assets/images/rpm.spec/image-20230701170955227.png" alt="image-20230701170955227" /></p>
+
+<p>该宏具体内容可以通过rpm –eval展开：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rpm <span class="nt">--eval</span> %<span class="o">{</span>__spec_buildrequires_template<span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/rpm.spec/image-20230701171040194.png" alt="image-20230701171040194" /></p>
+
+<p>这里涉及到一个环境变量PKG_CONFIG_PATH，使用了pkg-config工具，关于该工具介绍查看：<a href="https://people.freedesktop.org/~dbn/pkg-config-guide.html">Guide to pkg-config (people.freedesktop.org)</a></p>
+
+<p>该工具的作用：</p>
+
+<ul>
+  <li>避免硬编码lib库路径：</li>
+</ul>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gcc test.c <span class="sb">`</span>pkg-config <span class="nt">--libs</span> <span class="nt">--cflags</span> glib-2.0<span class="sb">`</span>
+
+<span class="o">[</span>root@openEuler2003SP1 SPECS]# pkg-config <span class="nt">--libs</span> <span class="nt">--cflags</span> glib-2.0
+<span class="nt">-I</span>/usr/include/glib-2.0 <span class="nt">-I</span>/usr/lib64/glib-2.0/include <span class="nt">-lglib-2</span>.0
+</code></pre></div></div>
+
+<ul>
+  <li>依赖版本检查</li>
+</ul>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>pkg-config <span class="nt">--libs</span> <span class="s2">"bar &gt;= 2.7"</span>
+Requested <span class="s1">'bar &gt;= 2.7'</span> but version of bar is 2.1.2
+</code></pre></div></div>
+
+<p>如果bar依赖foo，则使用以下命令将连带出完整的依赖链：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>root@openEuler2003SP1 <span class="nb">test</span><span class="o">]</span><span class="c"># pkg-config --libs --static foo</span>
+<span class="nt">-L</span>/usr/lib <span class="nt">-lfoo</span>
+<span class="o">[</span>root@openEuler2003SP1 <span class="nb">test</span><span class="o">]</span><span class="c"># pkg-config --libs --static bar</span>
+<span class="nt">-L</span>/usr/lib <span class="nt">-lbar</span> <span class="nt">-L</span>/usr/lib <span class="nt">-lfoo</span>
+</code></pre></div></div>
+
+<p>我们常见的configure输出的package not found错误，其实就是来自pkg-config的判断：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>root@openEuler2003SP1 <span class="nb">test</span><span class="o">]</span><span class="c"># pkg-config --exists --print-errors xoxo</span>
+Package xoxo was not found <span class="k">in </span>the pkg-config search path.
+Perhaps you should add the directory containing <span class="sb">`</span>xoxo.pc<span class="s1">'
+to the PKG_CONFIG_PATH environment variable
+Package '</span>xoxo<span class="s1">', required by '</span>virtual:world<span class="s1">', not found
+</span></code></pre></div></div>
+
+<p>我们再看下平时build阶段经常依赖的devel包，里面都有什么：</p>
+
+<p><img src="/assets/images/rpm.spec/image-20230701173341798.png" alt="image-20230701173341798" /></p>
+
+<p>可以看到有三部分，header、so、pc</p>
+
+<p>header对应到头文件函数声明，so对应的函数具体实现，pc就是pkg-config的元数据文件了，这三元组最终组合形成完整的依赖编译命令：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gcc test.c <span class="nt">-I</span>/usr/include/foo <span class="nt">-L</span>/usr/lib <span class="nt">-lbar</span> <span class="nt">-L</span>/usr/lib <span class="nt">-lfoo</span>
+</code></pre></div></div>
+
+<p>现在回到spec，BuildRequires不满足打印示例：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>root@openEuler2003SP1 SPECS]# rpmbuild <span class="nt">-ba</span> daos.spec
+error: Failed build dependencies:
+        daos-raft-devel <span class="o">=</span> 0.9.1-1401.gc18bcb8 is needed by daos-2.2.0-4.aarch64
+        go <span class="o">&gt;=</span> 1.14 is needed by daos-2.2.0-4.aarch64
+</code></pre></div></div>
+
+<p>这些error依赖检查来自：</p>
+
+<p><img src="/assets/images/rpm.spec/image-20230701173925324.png" alt="image-20230701173925324" /></p>
+
+<p><img src="/assets/images/rpm.spec/image-20230701174018570.png" alt="image-20230701174018570" /></p>
+
+<p>ts变量：transaction set，在rpmts.h中定义了一系列关于该变量的使用方法：</p>
+
+<p><img src="/assets/images/rpm.spec/image-20230701175121884.png" alt="image-20230701175121884" /></p>
+
+<p>所以rpm检查依赖的底层逻辑是通过查询数据库，数据库路径可以通过宏查看：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>root@openEuler2003SP1 SPECS]# rpm <span class="nt">--eval</span> <span class="s2">"%{_db_backend}"</span>
+bdb
+<span class="o">[</span>root@openEuler2003SP1 SPECS]# rpm <span class="nt">--eval</span> %<span class="o">{</span>_dbpath<span class="o">}</span>
+/var/lib/rpm
+<span class="o">[</span>root@openEuler2003SP1 SPECS]# <span class="nb">ls</span> /var/lib/rpm
+Basenames     __db.001  __db.003  Enhancename      Group       Name          Packages     Recommendname  Sha1header  Suggestname     Transfiletriggername
+Conflictname  __db.002  Dirnames  Filetriggername  Installtid  Obsoletename  Providename  Requirename    Sigmd5      Supplementname  Triggername
+</code></pre></div></div>
+
+<p>它是一个bdb数据库（旧的也有使用sqlite：<a href="https://rpm.org/user_doc/db_recovery.html">rpm.org - RPM Database Recovery</a>）</p>
+
+<p>devel包如何构建：<a href="https://stackoverflow.com/questions/2913130/building-both-devel-and-normal-version-of-a-rpm-package">linux - Building both devel and normal version of a RPM package - Stack Overflow</a></p>
+
+<p>一般不会单独写一个devel的spec，而是和binary rpm的spec共用，通过在各个章节后面带devel标记区分：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%package devel
+%description devel
+%files devel
+</code></pre></div></div>]]></content><author><name>StaveWu</name></author><category term="生态" /><category term="兼容性" /><summary type="html"><![CDATA[rpm.spec]]></summary></entry><entry><title type="html">编程语言兼容性</title><link href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/06/05/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%85%BC%E5%AE%B9%E6%80%A7.html" rel="alternate" type="text/html" title="编程语言兼容性" /><published>2023-06-05T15:00:02+00:00</published><updated>2023-06-05T15:00:02+00:00</updated><id>/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/06/05/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%85%BC%E5%AE%B9%E6%80%A7</id><content type="html" xml:base="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/06/05/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%85%BC%E5%AE%B9%E6%80%A7.html"><![CDATA[<h3 id="前言">前言</h3>
+
+<p>本文将讨论各类编程语言兼容性都是怎么引入的，这里的兼容性是指对硬件的兼容性、对不同架构平台芯片的兼容性。</p>
+
+<p><strong>什么是好的兼容性？</strong></p>
+
+<p>如果一款软件能够提供不同平台的二进制，或者一个二进制能够在不同平台上跑，那么说明这款软件的兼容性完备。</p>
+
+<p><strong>什么时候会出现兼容性问题？</strong></p>
+
+<ul>
+  <li>当代码中硬编码了汇编语言</li>
+  <li>当代码中调用了so库，而该so库还被打包到最终的可运行包里</li>
+  <li>当代码中调用了so库，且该so库是由软件源码包中的c/c++等待编译文件编译出来的</li>
+</ul>
+
+<p>以上这些情况均会导致软件与平台相关，进而导致软件必须提供不同平台编译版本才能满足软件在指定平台的可运行。</p>
+
+<p>只要软件和平台相关，那么当指定平台缺少该软件的预编译包时，整个上层应用在该平台上的安装就会失败，从而带来不好的兼容性体验。</p>
+
+<p><strong>那么，如何评价一款软件在给定平台的兼容性情况？</strong></p>
+
+<p>首先需要明确的是，兼容性达成情况是一个bool类型。软件是否兼容与软件有多么不兼容，后者会影响到你去做迁移适配的动作吗？难道软件严重不兼容就不做平台适配了？并不是的，对于给定的平台，我们想让软件跑起来，无论它具有多少不兼容代码，都得一一解决。唯有此，才能达成软件运行的目的。所以，评价软件兼容性是一个非黑即白的结论。</p>
+
+<p><strong>如何识别软件是否需要做兼容性？</strong></p>
+
+<ul>
+  <li>分析源码</li>
+  <li>直接在指定平台上编译运行</li>
+</ul>
+
+<p>针对第一点，以下挑选了top流行语言来列举各种可能存在的硬件兼容性情况。</p>
+
+<h3 id="javascript">javascript</h3>
+
+<h4 id="代码调用so">代码调用so</h4>
+
+<p>javascript调用so，使用node-ffi包：<a href="https://github.com/node-ffi/node-ffi">node-ffi/node-ffi: Node.js Foreign Function Interface (github.com)</a></p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">ffi</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">ffi</span><span class="dl">'</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">libm</span> <span class="o">=</span> <span class="nx">ffi</span><span class="p">.</span><span class="nx">Library</span><span class="p">(</span><span class="dl">'</span><span class="s1">libm</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span>
+  <span class="dl">'</span><span class="s1">ceil</span><span class="dl">'</span><span class="p">:</span> <span class="p">[</span> <span class="dl">'</span><span class="s1">double</span><span class="dl">'</span><span class="p">,</span> <span class="p">[</span> <span class="dl">'</span><span class="s1">double</span><span class="dl">'</span> <span class="p">]</span> <span class="p">]</span>
+<span class="p">});</span>
+<span class="nx">libm</span><span class="p">.</span><span class="nx">ceil</span><span class="p">(</span><span class="mf">1.5</span><span class="p">);</span> <span class="c1">// 2</span>
+
+<span class="c1">// You can also access just functions in the current process by passing a null</span>
+<span class="kd">var</span> <span class="nx">current</span> <span class="o">=</span> <span class="nx">ffi</span><span class="p">.</span><span class="nx">Library</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="p">{</span>
+  <span class="dl">'</span><span class="s1">atoi</span><span class="dl">'</span><span class="p">:</span> <span class="p">[</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="p">[</span> <span class="dl">'</span><span class="s1">string</span><span class="dl">'</span> <span class="p">]</span> <span class="p">]</span>
+<span class="p">});</span>
+<span class="nx">current</span><span class="p">.</span><span class="nx">atoi</span><span class="p">(</span><span class="dl">'</span><span class="s1">1234</span><span class="dl">'</span><span class="p">);</span> <span class="c1">// 1234</span>
+</code></pre></div></div>
+
+<p><strong>兼容性识别关键点：检查编译后的包是否包含so。</strong></p>
+
+<h4 id="代码包含cc">代码包含c/c++</h4>
+
+<p>有些javascript包中带有其他编程语言，比如node-ffi：https://api.github.com/repos/node-ffi/node-ffi/languages</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="nl">"JavaScript"</span><span class="p">:</span><span class="w"> </span><span class="mi">65311</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"C++"</span><span class="p">:</span><span class="w"> </span><span class="mi">35850</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"C"</span><span class="p">:</span><span class="w"> </span><span class="mi">1364</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"Python"</span><span class="p">:</span><span class="w"> </span><span class="mi">921</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>可以看到，js包里面具有c/c++编译型语言，这种包自然会导致平台兼容性问题。</p>
+
+<p><strong>兼容性识别关键点：检查源码中是否包含编译型语言。</strong></p>
+
+<h4 id="assembly技术">assembly技术</h4>
+
+<p>javascript运行会被浏览器翻译为assembly中间机器语言，这里的机器语言并非CPU相关，真正运行还要再转义一次。</p>
+
+<p>这篇文章以一种自定义的JS-ASM来描绘java assembly是怎么工作的：<a href="https://www.codeproject.com/Articles/417071/JavaScript-Assembler-Language-Specification-JS-ASM">JavaScript Assembler Language Specification (JS-ASM) - CodeProject</a></p>
+
+<h4 id="npm包">npm包</h4>
+
+<p><strong>npm包背景知识</strong></p>
+
+<p>npm包制作和发布参考：<a href="https://www.freecodecamp.org/news/how-to-create-and-publish-your-first-npm-package/">How to Create and Publish an NPM Package – a Step-by-Step Guide (freecodecamp.org)</a></p>
+
+<p>制作npm包有两种方式：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 方式1：link形式</span>
+npm <span class="nb">link</span>  <span class="c"># 将当前npm工程本地全局发布</span>
+npm <span class="nb">link</span> &lt;package-name&gt;  <span class="c"># 在其他工程目录下通过该命令引用</span>
+
+<span class="c"># 方式2：离线包形式</span>
+npm pack  <span class="c"># 将当前npm工程打包为一个tgz</span>
+<span class="nb">cp</span> /path/to/&lt;package&gt;.tgz <span class="nb">.</span>  <span class="c"># 在其他工程目录下通过该命令集成</span>
+<span class="c"># 修改package.json，指定&lt;package-name&gt;: &lt;package&gt;.tgz</span>
+</code></pre></div></div>
+
+<p>npm包安装过程解读：<a href="https://dev.to/shree_j/how-npm-works-internally-4012">How npm install Works Internally? - DEV Community</a></p>
+
+<p>npm包工作的核心文件是package.json，该文件内定义了npm如何对该包进行操作，包括install、serve、test等。</p>
+
+<p>如果没有特别说明，包内index.js为npm包的入口（entrypoint），新包发布所能使用的功能函数统一从这里出口（export）</p>
+
+<p><strong>了解这些背景知识后，我们看下有哪些情况npm包在安装时会触发兼容性问题</strong></p>
+
+<p><strong>案例1：</strong><a href="https://forums.meteor.com/t/npm-install-2-8-2-fails-on-arm64-asks-to-upgrade-to-2-5-1-or-later/59177/4">Npm install 2.8.2 fails on ARM64, asks to upgrade to 2.5.1 or later - core - Meteor.js forums</a></p>
+
+<p>该案例里npm包内具有平台检测硬编码，之所以做这类平台限制，是因为该包依赖了mongodb，而mongodb是平台相关，为适配arm，做了如下修复：</p>
+
+<p><a href="https://github.com/meteor/meteor/pull/12160/files#diff-e139871b4a22b32fdb9a795e1ac8ee683d848695e01d8b170e168534ef63d6c8">Support ARM on Linux by aquinoit · Pull Request #12160 · meteor/meteor (github.com)</a></p>
+
+<p><img src="/assets/images/编程语言兼容性/image-20230611113916798.png" alt="image-20230611113916798" /></p>
+
+<p><strong>案例2：</strong><a href="https://github.com/twilio/twilio-video-app-react/issues/668">Unable to <code class="language-plaintext highlighter-rouge">npm install</code> on M1 · Issue #668 · twilio/twilio-video-app-react (github.com)</a></p>
+
+<p>该报错是因为npm安装过程中apt install chromium-browser命令执行失败导致，最后通过手动补全chromium依赖解决。</p>
+
+<p>结合以上案例可以得出，npm包在安装过程中体现的兼容性问题，取决于npm包安装脚本是否有外界依赖引入。</p>
+
+<p><strong>兼容性识别关键点：直接跑一遍npm install来检验</strong></p>
+
+<h3 id="python">python</h3>
+
+<h4 id="代码调用c">代码调用c</h4>
+
+<p>这篇文章介绍了各种python调用c的方法，并给出了优劣势对比：<a href="https://realpython.com/python-bindings-overview/">Python Bindings: Calling C or C++ From Python – Real Python</a></p>
+
+<p>ctypes内置包会处理所有跟c、so的交互：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">ctypes</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="c1"># either
+</span><span class="n">libc</span> <span class="o">=</span> <span class="n">cdll</span><span class="p">.</span><span class="n">LoadLibrary</span><span class="p">(</span><span class="s">"libc.so.6"</span><span class="p">)</span>
+<span class="c1"># or
+</span><span class="n">libc</span> <span class="o">=</span> <span class="n">CDLL</span><span class="p">(</span><span class="s">"libc.so.6"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>兼容性识别关键点：识别源码中是否带有so名称，编译好的包是否具有so。</strong></p>
+
+<h4 id="wheel包">wheel包</h4>
+
+<p><strong>wheel包背景知识</strong></p>
+
+<p>和npm包一样，wheel包也有一个类似package.json的核心文件来承载包的元数据信息，该核心文件有一个演进史：</p>
+
+<p><a href="https://stackoverflow.com/questions/39484863/whats-the-difference-between-setup-py-and-setup-cfg-in-python-projects">What’s the difference between setup.py and setup.cfg in python projects - Stack Overflow</a></p>
+
+<p>最开始是setup.py，然后是setup.cfg，再到现在则为pyproject.toml</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>打包wheel的命令也有很多种，如build、wheel工具等，示例参考：[How to Create Python Packages</td>
+      <td>Towards Data Science](https://towardsdatascience.com/how-to-package-your-python-code-df5a7739ab2e)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>wheel包安装兼容性问题</strong></p>
+
+<p>安装过程触发本地编译，通过setup.py：</p>
+
+<p><img src="/assets/images/编程语言兼容性/image-20230611121349952.png" alt="image-20230611121349952" /></p>
+
+<p>此时如果setup.py过程对平台有依赖，就会报错。</p>
+
+<p>同npm包，wheel包安装失败的原因仅有可能是引入了外部依赖。</p>
+
+<p><strong>兼容性识别关键点：直接跑一遍pip install来检验</strong></p>
+
+<h3 id="java">java</h3>
+
+<p>java调用so的方式是通过JNI或JNA。</p>
+
+<h4 id="jni">jni</h4>
+
+<p>JNI用法：<a href="https://stackoverflow.com/questions/5963266/call-c-function-from-java">Call c function from Java - Stack Overflow</a></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">HelloWorld</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">print</span><span class="o">();</span>  <span class="c1">// 声明c方法</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">new</span> <span class="nf">HelloWorld</span><span class="o">().</span><span class="na">print</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">"HelloWorld"</span><span class="o">);</span>  <span class="c1">// 加载HelloWorld.so库</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>这里还包含怎么编译so库出来的问题，详细见上述链接。</p>
+
+<p><strong>兼容性识别关键点：native、System.loadLibrary关键字</strong></p>
+
+<h4 id="jna">jna</h4>
+
+<p>JNA方法：<a href="https://github.com/java-native-access/jna/blob/master/www/GettingStarted.md">jna/GettingStarted.md at master · java-native-access/jna · GitHub</a></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">com.sun.jna.examples</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">com.sun.jna.Library</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.jna.Native</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.jna.Platform</span><span class="o">;</span>
+
+<span class="cm">/** Simple example of JNA interface mapping and usage. */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloWorld</span> <span class="o">{</span>
+
+    <span class="c1">// This is the standard, stable way of mapping, which supports extensive</span>
+    <span class="c1">// customization and mapping of Java to native types.</span>
+
+    <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">CLibrary</span> <span class="kd">extends</span> <span class="nc">Library</span> <span class="o">{</span>
+        <span class="nc">CLibrary</span> <span class="no">INSTANCE</span> <span class="o">=</span> <span class="o">(</span><span class="nc">CLibrary</span><span class="o">)</span>
+            <span class="nc">Native</span><span class="o">.</span><span class="na">load</span><span class="o">((</span><span class="nc">Platform</span><span class="o">.</span><span class="na">isWindows</span><span class="o">()</span> <span class="o">?</span> <span class="s">"msvcrt"</span> <span class="o">:</span> <span class="s">"c"</span><span class="o">),</span>
+                                <span class="nc">CLibrary</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+        <span class="kt">void</span> <span class="nf">printf</span><span class="o">(</span><span class="nc">String</span> <span class="n">format</span><span class="o">,</span> <span class="nc">Object</span><span class="o">...</span> <span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">CLibrary</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"Hello, World\n"</span><span class="o">);</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">args</span><span class="o">.</span><span class="na">length</span><span class="o">;</span><span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="nc">CLibrary</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"Argument %d: %s\n"</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">args</span><span class="o">[</span><span class="n">i</span><span class="o">]);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>兼容性识别关键点：是否引用了jna依赖。</strong></p>
+
+<h4 id="其他jvm系语言">其他jvm系语言</h4>
+
+<p>其他基于java虚拟机开发的语言调用so方法和上述类似，均通过java官方的JNI或JNA方法：</p>
+
+<ul>
+  <li>scala：<a href="https://stackoverflow.com/questions/6286044/scala-c-integration">scala c integration - Stack Overflow</a></li>
+  <li>kotlin：<a href="https://stackoverflow.com/questions/72646387/calling-c-function-from-kotlin-using-jni">Calling C function from Kotlin using JNI - Stack Overflow</a></li>
+  <li>groovy：<a href="https://stackoverflow.com/questions/1105211/call-c-api-from-groovy?rq=4">java - Call C API from Groovy - Stack Overflow</a></li>
+  <li>clojure：<a href="https://stackoverflow.com/questions/53359255/calling-c-from-clojure">Calling C++ from clojure - Stack Overflow</a></li>
+</ul>
+
+<h3 id="perl">perl</h3>
+
+<p>perl语言的特点跟python类似，也是一种脚本解释语言。</p>
+
+<h4 id="代码调用c-1">代码调用c</h4>
+
+<p>perl调用c的方法如下：<a href="https://stackoverflow.com/questions/15136890/how-do-i-call-a-c-function-from-a-perl-program">How do I call a C function from a Perl program? - Stack Overflow</a></p>
+
+<div class="language-perl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">use</span> <span class="nv">Inline</span> <span class="s">C</span> <span class="o">=&gt;</span> <span class="s">&lt;&lt;'__END_OF_C__';
+
+    int sum(int a, int b)
+    {
+        return (a+b);
+    }
+
+__END_OF_C__
+</span>
+<span class="nv">say</span> <span class="nv">sum</span><span class="p">(</span><span class="nv">$x</span><span class="p">,</span><span class="nv">$y</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="ruby">ruby</h3>
+
+<p>ruby也是一种解释型语言。</p>
+
+<h4 id="代码调用c-2">代码调用c</h4>
+
+<p>ruby调用c的方式是通过<code class="language-plaintext highlighter-rouge">rb_define_method</code>方法：<a href="http://www.rubyinside.com/how-to-create-a-ruby-extension-in-c-in-under-5-minutes-100.html">How to create a Ruby extension in C in under 5 minutes (rubyinside.com)</a></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sr">//</span> <span class="no">Include</span> <span class="n">the</span> <span class="no">Ruby</span> <span class="n">headers</span> <span class="n">and</span> <span class="n">goodies</span>
+<span class="c1">#include "ruby.h"</span>
+
+<span class="sr">//</span> <span class="no">Defining</span> <span class="n">a</span> <span class="n">space</span> <span class="k">for</span> <span class="n">information</span> <span class="n">and</span> <span class="n">references</span> <span class="n">about</span> <span class="n">the</span> <span class="k">module</span> <span class="nn">to</span> <span class="n">be</span> <span class="n">stored</span> <span class="n">internally</span>
+<span class="no">VALUE</span> <span class="no">MyTest</span> <span class="o">=</span> <span class="no">Qnil</span><span class="p">;</span>
+
+<span class="sr">//</span> <span class="no">Prototype</span> <span class="k">for</span> <span class="n">the</span> <span class="n">initialization</span> <span class="nb">method</span> <span class="o">-</span> <span class="no">Ruby</span> <span class="n">calls</span> <span class="n">this</span><span class="p">,</span> <span class="n">not</span> <span class="n">you</span>
+<span class="n">void</span> <span class="no">Init_mytest</span><span class="p">();</span>
+
+<span class="sr">//</span> <span class="no">Prototype</span> <span class="k">for</span> <span class="n">our</span> <span class="nb">method</span> <span class="s1">'test1'</span> <span class="o">-</span> <span class="nb">methods</span> <span class="n">are</span> <span class="n">prefixed</span> <span class="n">by</span> <span class="s1">'method_'</span> <span class="n">here</span>
+<span class="no">VALUE</span> <span class="n">method_test1</span><span class="p">(</span><span class="no">VALUE</span> <span class="nb">self</span><span class="p">);</span>
+
+<span class="sr">//</span> <span class="no">The</span> <span class="n">initialization</span> <span class="nb">method</span> <span class="k">for</span> <span class="n">this</span> <span class="k">module</span>
+<span class="nn">void</span> <span class="no">Init_mytest</span><span class="p">()</span> <span class="p">{</span>
+	<span class="no">MyTest</span> <span class="o">=</span> <span class="n">rb_define_module</span><span class="p">(</span><span class="s2">"MyTest"</span><span class="p">);</span>  <span class="sr">//</span> <span class="err">定义</span><span class="n">c</span><span class="err">模块</span>
+	<span class="n">rb_define_method</span><span class="p">(</span><span class="no">MyTest</span><span class="p">,</span> <span class="s2">"test1"</span><span class="p">,</span> <span class="n">method_test1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>  <span class="sr">//</span> <span class="err">定义</span><span class="n">c</span><span class="err">方法</span>
+<span class="p">}</span>
+
+<span class="sr">//</span> <span class="no">Our</span> <span class="s1">'test1'</span> <span class="nb">method</span><span class="o">..</span> <span class="n">it</span> <span class="n">simply</span> <span class="n">returns</span> <span class="n">a</span> <span class="n">value</span> <span class="n">of</span> <span class="s1">'10'</span> <span class="k">for</span> <span class="n">now</span><span class="o">.</span>
+<span class="no">VALUE</span> <span class="n">method_test1</span><span class="p">(</span><span class="no">VALUE</span> <span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">return</span> <span class="no">INT2NUM</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="代码调用so-1">代码调用so</h4>
+
+<p>ruby调用so的方式通过借助ffi：<a href="https://www.jertype.com/calling-c-shared-library/">Calling C shared libraries with ruby FFI (jertype.com)</a></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">require</span> <span class="s1">'ffi'</span>
+
+<span class="k">module</span> <span class="nn">ConcatInterop</span>
+  <span class="kp">extend</span> <span class="no">FFI</span><span class="o">::</span><span class="no">Library</span>
+
+  <span class="n">ffi_lib</span> <span class="s1">'./concat.so'</span>
+  <span class="n">attach_function</span> <span class="ss">:concat</span><span class="p">,</span> <span class="p">[</span><span class="ss">:string</span><span class="p">,</span> <span class="ss">:string</span><span class="p">,</span> <span class="ss">:pointer</span><span class="p">],</span> <span class="ss">:void</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<h3 id="lua">lua</h3>
+
+<p>lua也是一种解释型语言。</p>
+
+<h4 id="代码调用c-3">代码调用c</h4>
+
+<p>lua调用c的方式是通过<code class="language-plaintext highlighter-rouge">lua_CFunction</code>方法：<a href="https://stackoverflow.com/questions/4190697/how-would-i-make-a-c-function-that-i-can-call-from-lua">How would I make a C-function that I can call from Lua? - Stack Overflow</a></p>
+
+<h4 id="代码调用so-2">代码调用so</h4>
+
+<p>lua调用so的方式是通过ffi：<a href="https://stackoverflow.com/questions/37876215/how-to-call-a-function-in-shared-library-using-lua">ffi - How to call a function in shared library using Lua - Stack Overflow</a></p>
+
+<div class="language-lua highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">local</span> <span class="n">lib</span> <span class="o">=</span> <span class="n">ffi</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'some.dll'</span><span class="p">)</span>
+<span class="n">ffi</span><span class="p">.</span><span class="n">cdef</span><span class="s">[[
+  void hello (void);
+]]</span>
+<span class="n">lib</span><span class="p">.</span><span class="n">hello</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="php">php</h3>
+
+<p>php想要调用c或so的话，就不是在php内声明c函数签名的方式了，而是通过编写php extension：<a href="https://stackoverflow.com/questions/3125388/is-it-possible-to-call-c-code-from-php">Is it possible to call C code from php - Stack Overflow</a></p>
+
+<h3 id="ccfortranrustgo">c/c++/fortran/rust/go</h3>
+
+<p>这些语言就都是编译型语言了，编译型语言一定是平台相关，意味着不存在出一个包就能达成跨平台的效果，故此类软件一定要做迁移。</p>
+
+<p>对于编译型语言，兼容性主要体现在编译过程，如：</p>
+
+<ul>
+  <li>按照默认的readme、官方文档编译步骤，编译过程是否顺畅？</li>
+  <li>是否存在某个平台相关选项导致编译失败？</li>
+</ul>]]></content><author><name>StaveWu</name></author><category term="生态" /><category term="兼容性" /><summary type="html"><![CDATA[前言]]></summary></entry><entry><title type="html">我的github.io是怎么搭的</title><link href="/jekyll-theme-yat/%E6%8C%87%E5%AF%BC%E4%B9%A6/2022/01/21/%E6%88%91%E7%9A%84github.io%E6%98%AF%E6%80%8E%E4%B9%88%E6%90%AD%E7%9A%84.html" rel="alternate" type="text/html" title="我的github.io是怎么搭的" /><published>2022-01-21T15:00:02+00:00</published><updated>2022-01-21T15:00:02+00:00</updated><id>/jekyll-theme-yat/%E6%8C%87%E5%AF%BC%E4%B9%A6/2022/01/21/%E6%88%91%E7%9A%84github.io%E6%98%AF%E6%80%8E%E4%B9%88%E6%90%AD%E7%9A%84</id><content type="html" xml:base="/jekyll-theme-yat/%E6%8C%87%E5%AF%BC%E4%B9%A6/2022/01/21/%E6%88%91%E7%9A%84github.io%E6%98%AF%E6%80%8E%E4%B9%88%E6%90%AD%E7%9A%84.html"><![CDATA[<p>如果你嫌弃国内博客站点的各种广告，并且不想花钱租服务器挂自己的博客站点，那么github.io是一个不错的选择。</p>
+
+<p>本文将介绍github.io如何快速上手。</p>
+
+<h2 id="快速上手">快速上手</h2>
+
+<h3 id="本地环境搭建">本地环境搭建</h3>
+
+<p>本地环境建议采用wsl，原因为：github.io依赖于jekyll（一个能够将markdown转化为html的软件），官方教程多以linux环境介绍，故使用wsl2将会很直接，免得折腾windows环境。</p>
+
+<p>github的个人网页默认采用jekyll搭建，jekyll是一个能够将markdown文件转义为html的web工具，由ruby编写，故首先需要准备ruby环境：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>apt <span class="nb">install </span>ruby-full
+</code></pre></div></div>
+
+<p>ruby有两个包管理器：</p>
+
+<ul>
+  <li>gem</li>
+  <li>bundle</li>
+</ul>
+
+<p>前者在安装ruby时自带，后者可以通过前者安装。具体为：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem <span class="nb">install </span>bundler
+</code></pre></div></div>
+
+<p>为便于快速下载依赖，修改源为国内镜像，参考：<a href="https://ruby-china.org/topics/38000">RubyGem 清华镜像 · Ruby China (ruby-china.org)</a></p>
+
+<p>gem源配置：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 添加 TUNA 源并移除默认源</span>
+gem sources <span class="nt">--add</span> https://mirrors.tuna.tsinghua.edu.cn/rubygems/ <span class="nt">--remove</span> https://rubygems.org/
+<span class="c"># 列出已有源</span>
+gem sources <span class="nt">-l</span>
+<span class="c"># 应该只有 TUNA 一个</span>
+</code></pre></div></div>
+
+<p>bundle源配置：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 配置源的local方式</span>
+bundle config mirror.https://rubygems.org https://mirrors.tuna.tsinghua.edu.cn/rubygems
+<span class="c"># 为root账户添加国内源</span>
+<span class="nb">sudo </span>bundle config mirror.https://rubygems.org https://mirrors.tuna.tsinghua.edu.cn/rubygems
+</code></pre></div></div>
+
+<p>源配好后，执行如下命令从零构建jekyll网页：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>gem <span class="nb">install </span>rails
+<span class="nb">sudo </span>gem <span class="nb">install </span>jekyll
+<span class="nb">cd</span> ~/Sites
+jekyll new &lt;foldername&gt;
+<span class="nb">cd</span> &lt;foldername&gt;
+bundle <span class="nb">install</span>  <span class="c"># 根据Gemfile定义安装依赖包</span>
+bundle <span class="nb">exec </span>jekyll serve  <span class="c"># 启动jekyll服务</span>
+</code></pre></div></div>
+
+<p>到这里可以尝试访问网页：http://127.0.0.1:4000/</p>
+
+<p>关于启动jekyll服务，你可能会碰到webrick load失败的报错，原因为：ruby版本太新，为3.x，而github后台仍然采用2.7.x版本的ruby，新版本里webrick包已经不在内置，故导致此类报错。解决方法有两种：</p>
+
+<ul>
+  <li>执行<code class="language-plaintext highlighter-rouge">bundle add webrick</code>补全该依赖包</li>
+  <li>回退ruby到2.7.x版本</li>
+</ul>
+
+<h3 id="新增博客">新增博客</h3>
+
+<p>直接在<code class="language-plaintext highlighter-rouge">_posts</code>文件夹中添加你的markdown即可。注意这里有几点约定：</p>
+<ol>
+  <li>markdown文件名命名：需要按<code class="language-plaintext highlighter-rouge">2022-01-16-welcome-to-jekyll</code>这种格式进行</li>
+  <li>markdown文件内容需加一个头部信息：</li>
+</ol>
+
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">---</span>
+<span class="na">layout</span><span class="pi">:</span> <span class="s">post</span>
+<span class="na">title</span><span class="pi">:</span>  <span class="s2">"</span><span class="s">Welcome</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">Jekyll!"</span>
+<span class="na">date</span><span class="pi">:</span>   <span class="s">2022-01-16 23:53:02 +0800</span>
+<span class="na">categories</span><span class="pi">:</span> <span class="s">jekyll update</span>
+<span class="nn">---</span>
+
+从这里开始写你的内容 ...
+</code></pre></div></div>
+
+<h3 id="修改主题">修改主题</h3>
+
+<p>默认jekyll生成的主题是最小集minimal，只有基础的样式功能，缺少归档、标签等功能，考虑后续的blog运维，这里引入了主题：jekyll-theme-yat</p>
+
+<p>引入方式是直接将该主题中的所有文件拷贝到当前仓库进行修改。</p>
+
+<blockquote>
+  <p>如该主题readme介绍，你也可以使用其他方式，当就实验来看，使用其他方式在github上构建会失败，报错信息：</p>
+
+  <p>Error:  The jekyll-theme-yat theme could not be found.</p>
+
+  <p>故这里直接采用简单粗暴的方式。</p>
+</blockquote>
+
+<p>然后执行</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bundle <span class="nb">install
+</span>bundle <span class="nb">exec </span>jekyll serve
+</code></pre></div></div>
+
+<p>访问本地网页查看效果。</p>]]></content><author><name>StaveWu</name></author><category term="指导书" /><category term="jekyll" /><summary type="html"><![CDATA[如果你嫌弃国内博客站点的各种广告，并且不想花钱租服务器挂自己的博客站点，那么github.io是一个不错的选择。]]></summary></entry></feed>

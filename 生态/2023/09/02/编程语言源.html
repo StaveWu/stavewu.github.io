@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-translate-customization" content="108d9124921d80c3-80e20d618ff053c8-g4f02ec6f3dba68b7-c">
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>编程语言源 | 吴言吴语</title>
+<meta name="generator" content="Jekyll v4.2.1">
+<meta property="og:title" content="编程语言源">
+<meta name="author" content="StaveWu">
+<meta property="og:locale" content="en_US">
+<meta name="description" content="编程语言源 概述 本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？ python 自定义包上传官方源 自定义包上传到pypi的教程：Packaging Python Projects — Python Packaging User Guide 通过twine命令。 有两点需要注意： 1、需要设置2FA验证后才能生成token。 什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。 腾讯小程序有一个比较好用的： Authentic 2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复： ERROR HTTPError: 403 Forbidden from https://test.pypi.org/legacy/ The user 'wutengda' isn't allowed to upload to project 'example-package-testing'. See https://test.pypi.org/help/#project-name for more information. 上传成功后，就可以使用该命令安装： (venv) wutengda@wutengda:~/packaging_tutorial$ pip install example-package-wutengda Collecting example-package-wutengda Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: example-package-wutengda Successfully installed example-package-wutengda-0.0.1 场景思考： 对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？ 方式1：理想的，推动pytorch社区合入发布联合编译版本 方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称 方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑： 是否允许采用pytorch命名？ 当联合编译版本依赖其他包时，是否允许跨仓库关联解决？ 自定义私有源 参考：Setting up a Private PyPI Server 安装pypiserver pip install pypiserver cd &lt;dir-for-host-pypi&gt; pypi-server run -a . -P . 拉起成功后，可登录：localhost:8080 -a . -P .表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。 在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。 上传成功后，即可访问http://localhost:8080/simple查看已上传的包。 如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例： # requirements.txt example-package-wutengda==0.0.1 # 在官方pypi源 use-example-priv==0.0.1 # 在本地localhost:8080/simple私有源 安装前清理cache： pip cache purge 此时执行： (venv) wutengda@wutengda:~/test$ pip install --index-url http://localhost:8080 --trusted-host=localhost:8080 -r requirements.txt Looking in indexes: http://localhost:8080 Collecting example-package-wutengda==0.0.1 Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) DEPRECATION: The HTML index page being used (http://localhost:8080/simple/use-example-priv/) is not a proper HTML 5 document. This is in violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825 Collecting use-example-priv==0.0.1 Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: use-example-priv, example-package-wutengda Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1 可以正常安装， 不过会有一个DEPRECATION。 兼容性结论： 私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。 java 自定义包上传maven源 参考：Maven – Maven Central Repository (apache.org) 为jar包生成gpgkey：Working with PGP Signatures - The Central Repository Documentation (sonatype.org) 提交jar包到中央仓库： apache项目都提交到这里：Nexus Repository Manager (apache.org) 其他项目提交到OSSRH：OSSRH Guide - The Central Repository Documentation (sonatype.org) 对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id） 对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：Choosing your Coordinates - The Central Repository Documentation (sonatype.org)）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。 这部分细节处理可参考：发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io) 现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/ 准备jar包，pom.xml文件按照以下两个指南编写： 最基本的包信息配置：Requirements - The Central Repository Documentation (sonatype.org) 用于一键上传到maven repository的配置：Apache Maven - The Central Repository Documentation (sonatype.org) 准备好后，使能编译： mvn clean deploy java17版本在deploy阶段存在编译错误：selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow 可采用降版本为java8规避。 如成功，将在OOSRH包管理网站上查询到staging profile信息： 虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to search can take up to four hours. 实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包： 兼容性结论： maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去 如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。 自定义maven源 自定义maven源可以使用sonatypes nexus：Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com) 从上一章节讨论： nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里 有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等 该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见Uploading Components (sonatype.com)。 nexus本身是开源的：GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror go 参考：Using Go Modules - The Go Programming Language 类似maven这种包管理工具在go里面是go mod go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include 以k8s为例，k8s仓库中存在一份go.mod，打开可以看到其require方式为url： // This is a generated file. Do not edit directly. // Ensure you've carefully read // https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md // Run hack/pin-dependency.sh to change pinned dependency versions. // Run hack/update-vendor.sh to update go.mod files and the vendor directory. module k8s.io/kubernetes go 1.20 require ( bitbucket.org/bertimus9/systemstat v0.5.0 github.com/Azure/azure-sdk-for-go v68.0.0+incompatible github.com/Azure/go-autorest/autorest v0.11.29 github.com/Azure/go-autorest/autorest/adal v0.9.23 github.com/GoogleCloudPlatform/k8s-cloud-provider v1.18.1-0.20220218231025-f11817397a1b github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab github.com/Microsoft/go-winio v0.6.0 github.com/Microsoft/hcsshim v0.8.25 ... 兼容性结论： 对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。 js 参考： Creating and publishing scoped public packages 超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn) js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：@xxx/hello-world），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。 因为在npm发布时要求必须要首先登录npm：npm login，所以不会出现私人包覆盖官方包的情况。 兼容性结论： npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。 rust rust是有中央仓库的：crates.io: Rust Package Registry ruby ruby也有中央仓库托管各种包：RubyGems.org">
+<meta property="og:description" content="编程语言源 概述 本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？ python 自定义包上传官方源 自定义包上传到pypi的教程：Packaging Python Projects — Python Packaging User Guide 通过twine命令。 有两点需要注意： 1、需要设置2FA验证后才能生成token。 什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。 腾讯小程序有一个比较好用的： Authentic 2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复： ERROR HTTPError: 403 Forbidden from https://test.pypi.org/legacy/ The user 'wutengda' isn't allowed to upload to project 'example-package-testing'. See https://test.pypi.org/help/#project-name for more information. 上传成功后，就可以使用该命令安装： (venv) wutengda@wutengda:~/packaging_tutorial$ pip install example-package-wutengda Collecting example-package-wutengda Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: example-package-wutengda Successfully installed example-package-wutengda-0.0.1 场景思考： 对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？ 方式1：理想的，推动pytorch社区合入发布联合编译版本 方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称 方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑： 是否允许采用pytorch命名？ 当联合编译版本依赖其他包时，是否允许跨仓库关联解决？ 自定义私有源 参考：Setting up a Private PyPI Server 安装pypiserver pip install pypiserver cd &lt;dir-for-host-pypi&gt; pypi-server run -a . -P . 拉起成功后，可登录：localhost:8080 -a . -P .表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。 在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。 上传成功后，即可访问http://localhost:8080/simple查看已上传的包。 如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例： # requirements.txt example-package-wutengda==0.0.1 # 在官方pypi源 use-example-priv==0.0.1 # 在本地localhost:8080/simple私有源 安装前清理cache： pip cache purge 此时执行： (venv) wutengda@wutengda:~/test$ pip install --index-url http://localhost:8080 --trusted-host=localhost:8080 -r requirements.txt Looking in indexes: http://localhost:8080 Collecting example-package-wutengda==0.0.1 Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) DEPRECATION: The HTML index page being used (http://localhost:8080/simple/use-example-priv/) is not a proper HTML 5 document. This is in violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825 Collecting use-example-priv==0.0.1 Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: use-example-priv, example-package-wutengda Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1 可以正常安装， 不过会有一个DEPRECATION。 兼容性结论： 私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。 java 自定义包上传maven源 参考：Maven – Maven Central Repository (apache.org) 为jar包生成gpgkey：Working with PGP Signatures - The Central Repository Documentation (sonatype.org) 提交jar包到中央仓库： apache项目都提交到这里：Nexus Repository Manager (apache.org) 其他项目提交到OSSRH：OSSRH Guide - The Central Repository Documentation (sonatype.org) 对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id） 对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：Choosing your Coordinates - The Central Repository Documentation (sonatype.org)）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。 这部分细节处理可参考：发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io) 现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/ 准备jar包，pom.xml文件按照以下两个指南编写： 最基本的包信息配置：Requirements - The Central Repository Documentation (sonatype.org) 用于一键上传到maven repository的配置：Apache Maven - The Central Repository Documentation (sonatype.org) 准备好后，使能编译： mvn clean deploy java17版本在deploy阶段存在编译错误：selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow 可采用降版本为java8规避。 如成功，将在OOSRH包管理网站上查询到staging profile信息： 虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to search can take up to four hours. 实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包： 兼容性结论： maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去 如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。 自定义maven源 自定义maven源可以使用sonatypes nexus：Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com) 从上一章节讨论： nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里 有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等 该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见Uploading Components (sonatype.com)。 nexus本身是开源的：GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror go 参考：Using Go Modules - The Go Programming Language 类似maven这种包管理工具在go里面是go mod go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include 以k8s为例，k8s仓库中存在一份go.mod，打开可以看到其require方式为url： // This is a generated file. Do not edit directly. // Ensure you've carefully read // https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md // Run hack/pin-dependency.sh to change pinned dependency versions. // Run hack/update-vendor.sh to update go.mod files and the vendor directory. module k8s.io/kubernetes go 1.20 require ( bitbucket.org/bertimus9/systemstat v0.5.0 github.com/Azure/azure-sdk-for-go v68.0.0+incompatible github.com/Azure/go-autorest/autorest v0.11.29 github.com/Azure/go-autorest/autorest/adal v0.9.23 github.com/GoogleCloudPlatform/k8s-cloud-provider v1.18.1-0.20220218231025-f11817397a1b github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab github.com/Microsoft/go-winio v0.6.0 github.com/Microsoft/hcsshim v0.8.25 ... 兼容性结论： 对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。 js 参考： Creating and publishing scoped public packages 超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn) js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：@xxx/hello-world），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。 因为在npm发布时要求必须要首先登录npm：npm login，所以不会出现私人包覆盖官方包的情况。 兼容性结论： npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。 rust rust是有中央仓库的：crates.io: Rust Package Registry ruby ruby也有中央仓库托管各种包：RubyGems.org">
+<link rel="canonical" href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html">
+<meta property="og:url" content="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html">
+<meta property="og:site_name" content="吴言吴语">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2023-09-02T15:00:02+00:00">
+<meta name="twitter:card" content="summary">
+<meta property="twitter:title" content="编程语言源">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"StaveWu"},"dateModified":"2023-09-02T15:00:02+00:00","datePublished":"2023-09-02T15:00:02+00:00","description":"编程语言源 概述 本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？ python 自定义包上传官方源 自定义包上传到pypi的教程：Packaging Python Projects — Python Packaging User Guide 通过twine命令。 有两点需要注意： 1、需要设置2FA验证后才能生成token。 什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。 腾讯小程序有一个比较好用的： Authentic 2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复： ERROR HTTPError: 403 Forbidden from https://test.pypi.org/legacy/ The user &#39;wutengda&#39; isn&#39;t allowed to upload to project &#39;example-package-testing&#39;. See https://test.pypi.org/help/#project-name for more information. 上传成功后，就可以使用该命令安装： (venv) wutengda@wutengda:~/packaging_tutorial$ pip install example-package-wutengda Collecting example-package-wutengda Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: example-package-wutengda Successfully installed example-package-wutengda-0.0.1 场景思考： 对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？ 方式1：理想的，推动pytorch社区合入发布联合编译版本 方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称 方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑： 是否允许采用pytorch命名？ 当联合编译版本依赖其他包时，是否允许跨仓库关联解决？ 自定义私有源 参考：Setting up a Private PyPI Server 安装pypiserver pip install pypiserver cd &lt;dir-for-host-pypi&gt; pypi-server run -a . -P . 拉起成功后，可登录：localhost:8080 -a . -P .表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。 在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。 上传成功后，即可访问http://localhost:8080/simple查看已上传的包。 如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例： # requirements.txt example-package-wutengda==0.0.1 # 在官方pypi源 use-example-priv==0.0.1 # 在本地localhost:8080/simple私有源 安装前清理cache： pip cache purge 此时执行： (venv) wutengda@wutengda:~/test$ pip install --index-url http://localhost:8080 --trusted-host=localhost:8080 -r requirements.txt Looking in indexes: http://localhost:8080 Collecting example-package-wutengda==0.0.1 Downloading example_package_wutengda-0.0.1-py3-none-any.whl (2.7 kB) DEPRECATION: The HTML index page being used (http://localhost:8080/simple/use-example-priv/) is not a proper HTML 5 document. This is in violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825 Collecting use-example-priv==0.0.1 Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl (2.7 kB) Installing collected packages: use-example-priv, example-package-wutengda Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1 可以正常安装， 不过会有一个DEPRECATION。 兼容性结论： 私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。 java 自定义包上传maven源 参考：Maven – Maven Central Repository (apache.org) 为jar包生成gpgkey：Working with PGP Signatures - The Central Repository Documentation (sonatype.org) 提交jar包到中央仓库： apache项目都提交到这里：Nexus Repository Manager (apache.org) 其他项目提交到OSSRH：OSSRH Guide - The Central Repository Documentation (sonatype.org) 对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id） 对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：Choosing your Coordinates - The Central Repository Documentation (sonatype.org)）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。 这部分细节处理可参考：发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io) 现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/ 准备jar包，pom.xml文件按照以下两个指南编写： 最基本的包信息配置：Requirements - The Central Repository Documentation (sonatype.org) 用于一键上传到maven repository的配置：Apache Maven - The Central Repository Documentation (sonatype.org) 准备好后，使能编译： mvn clean deploy java17版本在deploy阶段存在编译错误：selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow 可采用降版本为java8规避。 如成功，将在OOSRH包管理网站上查询到staging profile信息： 虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to search can take up to four hours. 实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包： 兼容性结论： maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去 如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。 自定义maven源 自定义maven源可以使用sonatypes nexus：Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com) 从上一章节讨论： nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里 有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等 该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见Uploading Components (sonatype.com)。 nexus本身是开源的：GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror go 参考：Using Go Modules - The Go Programming Language 类似maven这种包管理工具在go里面是go mod go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include 以k8s为例，k8s仓库中存在一份go.mod，打开可以看到其require方式为url： // This is a generated file. Do not edit directly. // Ensure you&#39;ve carefully read // https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md // Run hack/pin-dependency.sh to change pinned dependency versions. // Run hack/update-vendor.sh to update go.mod files and the vendor directory. module k8s.io/kubernetes go 1.20 require ( bitbucket.org/bertimus9/systemstat v0.5.0 github.com/Azure/azure-sdk-for-go v68.0.0+incompatible github.com/Azure/go-autorest/autorest v0.11.29 github.com/Azure/go-autorest/autorest/adal v0.9.23 github.com/GoogleCloudPlatform/k8s-cloud-provider v1.18.1-0.20220218231025-f11817397a1b github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab github.com/Microsoft/go-winio v0.6.0 github.com/Microsoft/hcsshim v0.8.25 ... 兼容性结论： 对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。 js 参考： Creating and publishing scoped public packages 超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn) js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：@xxx/hello-world），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。 因为在npm发布时要求必须要首先登录npm：npm login，所以不会出现私人包覆盖官方包的情况。 兼容性结论： npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。 rust rust是有中央仓库的：crates.io: Rust Package Registry ruby ruby也有中央仓库托管各种包：RubyGems.org","headline":"编程语言源","mainEntityOfPage":{"@type":"WebPage","@id":"/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html"},"url":"/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="icon" href="">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-noto-sans@0.0.72/index.min.css">
+  <link rel="stylesheet" href="/jekyll-theme-yat/assets/css/main.css">
+  <script src="/jekyll-theme-yat/assets/js/main.js"></script><link type="application/atom+xml" rel="alternate" href="/jekyll-theme-yat/feed.xml" title="吴言吴语">
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"></script>
+<!-- and it's easy to individually load additional languages -->
+<script charset="UTF-8" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/languages/go.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// Init highlight js
+document.addEventListener('DOMContentLoaded', function(event) {
+  var els = document.querySelectorAll('pre code')
+
+  function addLangData(block) {
+    var outer = block.parentElement.parentElement.parentElement;
+    var lang = block.getAttribute('data-lang');
+    for (var i = 0; i < outer.classList.length; i++) {
+      var cls = outer.classList[i];
+      if (cls.startsWith('language-')) {
+        lang = cls;
+        break;
+      }
+    }
+    if (!lang) {
+      cls = block.getAttribute('class');
+      lang = cls ? cls.replace('hljs ', '') : '';
+    }
+    if (lang.startsWith('language-')) {
+      lang = lang.substr(9);
+    }
+    block.setAttribute('class', 'hljs ' + lang);
+    block.parentNode.setAttribute('data-lang', lang);
+  }
+
+  function addBadge(block) {
+    var enabled = ('true' || 'true').toLowerCase();
+    if (enabled == 'true') {
+      var pre = block.parentElement;
+      pre.classList.add('badge');
+    }
+  }
+
+  function handle(block) {
+    addLangData(block);
+    addBadge(block)
+    hljs.highlightBlock(block);
+  }
+
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    handle(el);
+  }
+});
+</script>
+
+<style>
+  /* code language badge */
+  pre.badge::before {
+    content: attr(data-lang);
+    color: #fff;
+    background-color: #ff4e00;
+    padding: 0 .5em;
+    border-radius: 0 2px;
+    text-transform: uppercase;
+    text-align: center;
+    min-width: 32px;
+    display: inline-block;
+    position: absolute;
+    right: 0;
+  }
+
+  /* fix wrong badge display for firefox browser */
+  code > table pre::before {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<header class="site-header " role="banner">
+
+  <div class="wrapper">
+    <div class="site-header-inner">
+<span class="site-brand"><a class="site-brand-inner" rel="author" href="/jekyll-theme-yat/">
+  <img class="site-favicon" title="吴言吴语" src="" onerror="this.style.display='none'">
+  吴言吴语
+</a>
+</span><nav class="site-nav">
+          <input type="checkbox" id="nav-trigger" class="nav-trigger">
+          <label for="nav-trigger">
+            <span class="menu-icon">
+              <svg viewbox="0 0 18 15" width="18px" height="15px">
+                <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"></path>
+              </svg>
+            </span>
+          </label>
+
+          <div class="trigger">
+<a class="page-link" href="/jekyll-theme-yat/about.html">关于</a><a class="page-link" href="/jekyll-theme-yat/archives.html">归档</a><a class="page-link" href="/jekyll-theme-yat/categories.html">分类</a><a class="page-link" href="/jekyll-theme-yat/">主页</a><a class="page-link" href="/jekyll-theme-yat/tags.html">标签</a>
+
+
+
+
+</div>
+        </nav>
+</div>
+  </div>
+</header>
+
+<script>
+  function initHeader() {
+    var lastScrollY = getScrollPos().y;
+    var documentElement = document.documentElement;
+
+    function storeScrollData() {
+      var y = getScrollPos().y;var scrollStatus = "";
+
+      if (y <= 0) {
+        scrollStatus = "top";
+      } else if ((window.innerHeight + y) >= document.body.offsetHeight) {
+        scrollStatus = "bottom";
+      } else {
+        var isScrollDown = (y - lastScrollY > 0) ? true : false;
+        scrollStatus = isScrollDown ? "down" : "up";
+      }
+
+      lastScrollY = y;
+      documentElement.setAttribute("data-scroll-status", scrollStatus);
+    }
+
+    window.addEventListener('scroll', function(e) {
+      storeScrollData();
+    });
+
+    storeScrollData();
+  }
+  document.addEventListener('DOMContentLoaded', initHeader);
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  function hashLocate(hashValue) {
+    hashValue = hashValue.replace(/^.*#h-/, '');
+    hashValue = decodeURIComponent(hashValue);
+    var element = document.getElementById(hashValue);
+
+    if (!element) {
+      return;
+    }
+
+    var header = document.querySelector('header.site-header');
+    var headerRect = header.getBoundingClientRect();
+    var headerTop = Math.floor(headerRect.top);
+    var headerHeight = Math.floor(headerRect.height);
+    var scrollPos = getScrollPos();
+    var offsetY = element.offsetTop - (headerTop + headerHeight + 20);
+
+    if (offsetY == scrollPos.y) {
+      return;
+    }
+
+    if (headerTop == 0  && offsetY > scrollPos.y) {
+      offsetY += headerHeight + 2;
+    } else if (headerTop < 0  && offsetY < scrollPos.y) {
+      offsetY -= headerHeight - 2;
+    }
+
+    smoothScrollTo(offsetY);
+  }
+
+  // The first event occurred
+  window.addEventListener('load', function(event) {
+    if (window.location.hash) {
+      hashLocate(window.location.hash);
+    }
+  });
+
+  // The first event occurred
+  window.addEventListener('click', function(event) {
+    if (event.target.tagName.toLowerCase() == 'a') {
+      hashLocate(event.target.getAttribute('href'));
+    }
+  });
+</script>
+<div class="theme-toggle">
+  <input type="checkbox" id="theme-switch">
+  <label for="theme-switch">
+    <div class="toggle"></div>
+    <div class="names">
+      <p class="light">Light</p>
+      <p class="dark">Dark</p>
+    </div>
+  </label>
+</div>
+
+
+
+
+<script>
+  (function() {
+    var sw = document.getElementById('theme-switch');
+    var html = document.getElementsByTagName('html')[0];
+    var nightModeOption = ('auto' || 'auto').toLowerCase();
+    var storage = nightModeOption === 'manual'
+        ? localStorage
+        : sessionStorage;
+    var themeData = loadThemeData();
+
+    function saveThemeData(data) {
+      storage.setItem('theme', JSON.stringify(data));
+    }
+
+    function loadThemeData() {
+      var data = storage.getItem('theme');
+      try {
+        data = JSON.parse(data ? data : '');
+      } catch(e) {
+        data = { nightShift: undefined, autoToggleAt: 0 };
+        saveThemeData(data);
+      }
+      return data;
+    }
+
+    function handleThemeToggle(nightShift) {
+      themeData.nightShift = nightShift;
+      saveThemeData(themeData);
+      html.dataset.theme = nightShift ? 'dark' : 'light';
+      setTimeout(function() {
+        sw.checked = nightShift ? true : false;
+      }, 50);
+    }
+
+    function autoThemeToggle() {
+      // Next time point of theme toggle
+      var now = new Date();
+      var toggleAt = new Date();
+      var hours = now.getHours();
+      var nightShift = hours >= 19 || hours <=7;
+
+      if (nightShift) {
+        if (hours > 7) {
+          toggleAt.setDate(toggleAt.getDate() + 1);
+        }
+        toggleAt.setHours(7);
+      } else {
+        toggleAt.setHours(19);
+      }
+
+      toggleAt.setMinutes(0);
+      toggleAt.setSeconds(0);
+      toggleAt.setMilliseconds(0)
+
+      var delay = toggleAt.getTime() - now.getTime();
+
+      // auto toggle theme mode
+      setTimeout(function() {
+        handleThemeToggle(!nightShift);
+      }, delay);
+
+      return {
+        nightShift: nightShift,
+        toggleAt: toggleAt.getTime()
+      };
+    }
+
+    // Listen the theme toggle event
+    sw.addEventListener('change', function(event) {
+      handleThemeToggle(event.target.checked);
+    });
+
+    if (nightModeOption == 'auto') {
+      var data = autoThemeToggle();
+
+      // Toggle theme by local setting
+      if (data.toggleAt > themeData.autoToggleAt) {
+        themeData.autoToggleAt = data.toggleAt;
+        handleThemeToggle(data.nightShift);
+      } else {
+        handleThemeToggle(themeData.nightShift);
+      }
+    } else if (nightModeOption == 'manual') {
+      handleThemeToggle(themeData.nightShift);
+    } else {
+      var nightShift = themeData.nightShift;
+      if (nightShift === undefined) {
+        nightShift = nightModeOption === 'on';
+      }
+      handleThemeToggle(nightShift);
+    }
+  })();
+</script>
+<div id="click-to-top" class="click-to-top">
+  <i class="fa fa-arrow-up"></i>
+</div>
+<script>
+  (function () {
+    const clickToTop = document.getElementById('click-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 100) {
+        clickToTop.classList.add('show')
+      }else {
+        clickToTop.classList.remove('show')
+      }
+    });
+    clickToTop.addEventListener('click', () => {
+      window.smoothScrollTo(0);
+    });
+  })();
+</script>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="framework">
+  <section class="main">
+
+     <div class="post">
+  <section>
+
+
+
+
+
+
+
+
+
+<header class="post-header">
+  <h1 class="post-title p-name" itemprop="name headline">编程语言源</h1>
+  <h2 class="post-subtitle"></h2>
+
+  <p class="post-meta">
+    <time class="dt-published" datetime="2023-09-02T15:00:02+00:00" itemprop="datePublished"><i class="fa fa-calendar"></i> Sep 02, 2023
+    </time>
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <span class="post-reading-time left-vsplit"><i class="fa fa-clock-o"></i> About 4 mins</span>
+  </p>
+<div class="post-tags"><a class="post-tag" href="/jekyll-theme-yat/tags.html#%E5%85%BC%E5%AE%B9%E6%80%A7">#兼容性</a></div></header>
+<article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+    <div class="post-content e-content" itemprop="articleBody">
+
+      <h1 id="编程语言源">编程语言源</h1>
+
+<h2 id="概述">概述</h2>
+
+<p>本文探索不同编程语言都是如何管理其依赖包的，如何做到快速安装使用？如何为其构建的源做贡献？以及，如果想自定义一个第三方包管理，怎么做？</p>
+
+<h2 id="python">python</h2>
+
+<h3 id="自定义包上传官方源">自定义包上传官方源</h3>
+
+<p>自定义包上传到pypi的教程：<a href="https://packaging.python.org/en/latest/tutorials/packaging-projects/">Packaging Python Projects — Python Packaging User Guide</a></p>
+
+<p>通过twine命令。</p>
+
+<p>有两点需要注意：</p>
+
+<p>1、需要设置2FA验证后才能生成token。</p>
+
+<p>什么是2FA验证：类似一种动态口令，需要手机扫二维码，获得口令码，再输入验证。</p>
+
+<p>腾讯小程序有一个比较好用的： Authentic</p>
+
+<p>2、如果遇到上传失败，提示403的情况，检查包名是否跟其他人重复：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ERROR    HTTPError: 403 Forbidden from https://test.pypi.org/legacy/               
+         The user <span class="s1">'wutengda'</span> isn<span class="s1">'t allowed to upload to project                    
+         '</span>example-package-testing<span class="s1">'. See https://test.pypi.org/help/#project-name   
+         for more information. 
+</span></code></pre></div></div>
+
+<p>上传成功后，就可以使用该命令安装：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>venv<span class="o">)</span> wutengda@wutengda:~/packaging_tutorial<span class="nv">$ </span>pip <span class="nb">install </span>example-package-wutengda
+ 
+Collecting example-package-wutengda
+  Downloading example_package_wutengda-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+Installing collected packages: example-package-wutengda
+Successfully installed example-package-wutengda-0.0.1
+</code></pre></div></div>
+
+<p>场景思考：</p>
+
+<p>对于pytorch，在arm上直接使用报没有和cuda联合编译，导致运行失败的情况。此时我们手动编译构建了一个可用的联合编译版本，如何提交到pypi？</p>
+
+<p>方式1：理想的，推动pytorch社区合入发布联合编译版本</p>
+
+<p>方式2：在pypi上开一个新账号，提交新包到该账号下。该方式弊端是，你没法用pytorch命名，而使用者想用的话，只能去适配你的名称</p>
+
+<p>方式3：新建一个私有pypi，将联合编译版本提交到这里。该方式需考虑：</p>
+
+<ul>
+  <li>是否允许采用pytorch命名？</li>
+  <li>当联合编译版本依赖其他包时，是否允许跨仓库关联解决？</li>
+</ul>
+
+<h3 id="自定义私有源">自定义私有源</h3>
+
+<p>参考：<a href="https://testdriven.io/blog/private-pypi/">Setting up a Private PyPI Server</a></p>
+
+<p>安装pypiserver</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install </span>pypiserver
+<span class="nb">cd</span> &lt;dir-for-host-pypi&gt;
+pypi-server run <span class="nt">-a</span> <span class="nb">.</span> <span class="nt">-P</span> <span class="nb">.</span>
+</code></pre></div></div>
+
+<p>拉起成功后，可登录：localhost:8080</p>
+
+<p><code class="language-plaintext highlighter-rouge">-a . -P .</code>表示不需要登录就可以上传包，只要在上传时保持账号密码为空即可。</p>
+
+<p>在没有指定目录时，上传的包会自动放到$HOME/packages目录下，如果该目录没有提前创建，上传会失败。</p>
+
+<p>上传成功后，即可访问http://localhost:8080/simple查看已上传的包。</p>
+
+<p>如果A包在自定义的仓库，B包在官方pypi源，此时pip install的行为是什么样的？示例：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># requirements.txt</span>
+example-package-wutengda<span class="o">==</span>0.0.1  <span class="c"># 在官方pypi源</span>
+use-example-priv<span class="o">==</span>0.0.1  <span class="c"># 在本地localhost:8080/simple私有源</span>
+</code></pre></div></div>
+
+<p>安装前清理cache：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip cache purge
+</code></pre></div></div>
+
+<p>此时执行：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>venv<span class="o">)</span> wutengda@wutengda:~/test<span class="nv">$ </span>pip <span class="nb">install</span> <span class="nt">--index-url</span> http://localhost:8080 <span class="nt">--trusted-host</span><span class="o">=</span>localhost:8080 <span class="nt">-r</span> requirements.txt
+Looking <span class="k">in </span>indexes: http://localhost:8080
+Collecting example-package-wutengda<span class="o">==</span>0.0.1
+  Downloading example_package_wutengda-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+DEPRECATION: The HTML index page being used <span class="o">(</span>http://localhost:8080/simple/use-example-priv/<span class="o">)</span> is not a proper HTML 5 document. This is <span class="k">in </span>violation of PEP 503 which requires these pages to be well-formed HTML 5 documents. Please reach out to the owners of this index page, and ask them to update this index page to a valid HTML 5 document. pip 22.2 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/10825
+Collecting use-example-priv<span class="o">==</span>0.0.1
+  Downloading http://localhost:8080/packages/use_example_priv-0.0.1-py3-none-any.whl <span class="o">(</span>2.7 kB<span class="o">)</span>
+Installing collected packages: use-example-priv, example-package-wutengda
+Successfully installed example-package-wutengda-0.0.1 use-example-priv-0.0.1
+</code></pre></div></div>
+
+<p>可以正常安装， 不过会有一个DEPRECATION。</p>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>私有pypi源内如果有包依赖到官方源，则pip能够处理这种关系，pip将首先在当前配置的私有源中查找，如果未找到，则默认回退到官方源中查找。</p>
+
+<h2 id="java">java</h2>
+
+<h3 id="自定义包上传maven源">自定义包上传maven源</h3>
+
+<p>参考：<a href="https://maven.apache.org/repository/">Maven – Maven Central Repository (apache.org)</a></p>
+
+<p>为jar包生成gpgkey：<a href="https://central.sonatype.org/publish/requirements/gpg/#distributing-your-public-key">Working with PGP Signatures - The Central Repository Documentation (sonatype.org)</a></p>
+
+<p>提交jar包到中央仓库：</p>
+
+<ul>
+  <li>
+    <p>apache项目都提交到这里：<a href="https://repository.apache.org/">Nexus Repository Manager (apache.org)</a></p>
+  </li>
+  <li>
+    <p>其他项目提交到OSSRH：<a href="https://central.sonatype.org/publish/publish-guide/">OSSRH Guide - The Central Repository Documentation (sonatype.org)</a></p>
+  </li>
+</ul>
+
+<p>对于自定义的包，一般往OSSRH提交。该提交必须首先要持有一个JIRA账号和项目ticket（也就是新建一个group id）</p>
+
+<p>对于私人项目，groupid可基于github命名，比如：io.github.stavewu（其他命名方式参考：<a href="https://central.sonatype.org/publish/requirements/coordinates/#choose-your-coordinates">Choosing your Coordinates - The Central Repository Documentation (sonatype.org)</a>）。提交new project后，还必须在自己的github下创建一个名为OSSRH-xxxxxx的仓库，完成后在对应OSSRH申请单下评论知会工作人员，通常是由机器人秒批的。</p>
+
+<p>这部分细节处理可参考：<a href="https://index1024.gitee.io/xblog/release-jar-to-mvn-centeral-repo/">发布 Jar 包到 Maven 中央仓库 – LOFFER – 一个可以fork的博客 (gitee.io)</a></p>
+
+<p><img src="/assets/images/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90/image-20230929231952522.png" alt="image-20230929231952522"></p>
+
+<p>现在就可以通过jira账号登录OSSRH包管理网站：https://s01.oss.sonatype.org/</p>
+
+<p>准备jar包，pom.xml文件按照以下两个指南编写：</p>
+
+<ul>
+  <li>最基本的包信息配置：<a href="https://central.sonatype.org/publish/requirements/#create-a-ticket-with-sonatype">Requirements - The Central Repository Documentation (sonatype.org)</a>
+</li>
+  <li>用于一键上传到maven repository的配置：<a href="https://central.sonatype.org/publish/publish-maven/#performing-a-release-deployment">Apache Maven - The Central Repository Documentation (sonatype.org)</a>
+</li>
+</ul>
+
+<p>准备好后，使能编译：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mvn clean deploy
+</code></pre></div></div>
+
+<blockquote>
+  <p>java17版本在deploy阶段存在编译错误：<a href="https://stackoverflow.com/questions/68974753/unable-to-make-field-private-final-java-util-comparator-java-util-treemap-compar">selenium webdriver - Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: java.base doesn’t “opens java.util” to unnamed module - Stack Overflow</a></p>
+
+  <p>可采用降版本为java8规避。</p>
+</blockquote>
+
+<p>如成功，将在OOSRH包管理网站上查询到staging profile信息：</p>
+
+<p><img src="/assets/images/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90/image-20230930004122812.png" alt="image-20230930004122812"></p>
+
+<blockquote>
+  <p>虽然官网写了：Upon release, your component will be published to Central: this typically occurs within 30 minutes, though updates to <a href="https://search.maven.org/">search</a> can take up to four hours.</p>
+
+  <p>实际同步花个更长时间，可能大概两天，终于查到了我们要上传的包：</p>
+
+  <p><img src="/assets/images/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90/image-20231001174057638.png" alt="image-20231001174057638"></p>
+</blockquote>
+
+<p><strong>兼容性结论：</strong></p>
+
+<ol>
+  <li>maven central对group id有严格控制，必须要得到group id管理员许可才能够提交进去</li>
+  <li>如果想基于已有开源软件（如spark）合入问题修复的版本，如做了兼容性适配完善等，想提交到maven central的话，必定会收到group id权限限制，也即需要社区同意后才能合入，无法自行处理。</li>
+</ol>
+
+<h3 id="自定义maven源">自定义maven源</h3>
+
+<p>自定义maven源可以使用sonatypes nexus：<a href="https://zhuanlan.zhihu.com/p/544089278">Nexus！最受欢迎的仓库管理软件 - 知乎 (zhihu.com)</a></p>
+
+<p>从上一章节讨论：</p>
+
+<ol>
+  <li>nexus是介于maven central和本地之间的中转仓库，所有提交的包都会先存在于nexus这里</li>
+  <li>有很多包管理网站基于nexus搭建，如OSSRH、apache基金会等</li>
+</ol>
+
+<p>该软件提供了图形化界面来上传包，支持除java以外的各种包类型，如npm等，详细包类型支持见<a href="https://help.sonatype.com/repomanager3/using-nexus-repository/uploading-components">Uploading Components (sonatype.com)</a>。</p>
+
+<p>nexus本身是开源的：<a href="https://github.com/sonatype/nexus-public">GitHub - sonatype/nexus-public: Sonatype Nexus Repository Manager; Open-source codebase mirror</a></p>
+
+<h2 id="go">go</h2>
+
+<p>参考：<a href="https://go.dev/blog/using-go-modules">Using Go Modules - The Go Programming Language</a></p>
+
+<p>类似maven这种包管理工具在go里面是go mod</p>
+
+<p>go没有像maven一样有统一的中央仓库，go引入mod完全是靠各个包所在的网络链接来include</p>
+
+<p>以k8s为例，<a href="https://github.com/kubernetes/kubernetes">k8s仓库</a>中存在一份go.mod，打开可以看到其require方式为url：</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// This is a generated file. Do not edit directly.</span>
+<span class="c">// Ensure you've carefully read</span>
+<span class="c">// https://git.k8s.io/community/contributors/devel/sig-architecture/vendor.md</span>
+<span class="c">// Run hack/pin-dependency.sh to change pinned dependency versions.</span>
+<span class="c">// Run hack/update-vendor.sh to update go.mod files and the vendor directory.</span>
+
+<span class="n">module</span> <span class="n">k8s</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">kubernetes</span>
+
+<span class="k">go</span> <span class="m">1.20</span>
+
+<span class="n">require</span> <span class="p">(</span>
+	<span class="n">bitbucket</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">bertimus9</span><span class="o">/</span><span class="n">systemstat</span> <span class="n">v0</span><span class="m">.5.0</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="n">azure</span><span class="o">-</span><span class="n">sdk</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="k">go</span> <span class="n">v68</span><span class="m">.0.0</span><span class="o">+</span><span class="n">incompatible</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">autorest</span><span class="o">/</span><span class="n">autorest</span> <span class="n">v0</span><span class="m">.11.29</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Azure</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">autorest</span><span class="o">/</span><span class="n">autorest</span><span class="o">/</span><span class="n">adal</span> <span class="n">v0</span><span class="m">.9.23</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">GoogleCloudPlatform</span><span class="o">/</span><span class="n">k8s</span><span class="o">-</span><span class="n">cloud</span><span class="o">-</span><span class="n">provider</span> <span class="n">v1</span><span class="m">.18.1</span><span class="o">-</span><span class="m">0.20220218231025</span><span class="o">-</span><span class="n">f11817397a1b</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">JeffAshton</span><span class="o">/</span><span class="n">win_pdh</span> <span class="n">v0</span><span class="m">.0.0</span><span class="o">-</span><span class="m">20161109143554</span><span class="o">-</span><span class="m">76</span><span class="n">bb4ee9f0ab</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Microsoft</span><span class="o">/</span><span class="k">go</span><span class="o">-</span><span class="n">winio</span> <span class="n">v0</span><span class="m">.6.0</span>
+	<span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Microsoft</span><span class="o">/</span><span class="n">hcsshim</span> <span class="n">v0</span><span class="m">.8.25</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>对于兼容性来说，因为go本身没有中央仓库管理，因此如有定制的patch等，在合入go mod官方仓库前是可以通过rpm等系统包管理机制来承载。go本身最终编译生成的文件也是一个标准系统二进制文件。</p>
+
+<h2 id="js">js</h2>
+
+<p>参考：</p>
+
+<ul>
+  <li>
+    <p><a href="https://docs.npmjs.com/creating-and-publishing-scoped-public-packages">Creating and publishing scoped public packages</a></p>
+  </li>
+  <li>
+    <p><a href="https://juejin.cn/post/7039140144250617887">超详细 如何发布自己的 npm 包 - 掘金 (juejin.cn)</a></p>
+  </li>
+</ul>
+
+<p>js的包发布通过npm即可完成，js的包也分两种，私人的和组织的，通过scope的表达方式进行（示例：<code class="language-plaintext highlighter-rouge">@xxx/hello-world</code>），这里的scope其实等价于namespace，用于预防和其他同名包冲突。不是所有的包都需要声明scope，比如vue。私人也可以发一些不带scope的包，比如shanglv-utils。</p>
+
+<p>因为在npm发布时要求必须要首先登录npm：<code class="language-plaintext highlighter-rouge">npm login</code>，所以不会出现私人包覆盖官方包的情况。</p>
+
+<p><strong>兼容性结论：</strong></p>
+
+<p>npm发布包的机制和python基本一致，对于官方包，当官方包已经占位的情况下，我们无法去覆盖它，如有类型兼容性的patch需要合入，只有一种方式，就是通过包官方仓库接纳。</p>
+
+<h2 id="rust">rust</h2>
+
+<p>rust是有中央仓库的：<a href="https://crates.io/">crates.io: Rust Package Registry</a></p>
+
+<h2 id="ruby">ruby</h2>
+
+<p>ruby也有中央仓库托管各种包：<a href="https://rubygems.org/">RubyGems.org</a></p>
+
+
+
+    </div>
+
+</article>
+<div class="post-nav">
+<a class="previous" href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/07/01/rpm.spec.html" title="rpm.spec">rpm.spec</a><span></span>
+</div>
+<div class="post-related">
+      <div>Related Articles</div>
+      <ul>
+        <li><a class="post-link" href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/07/01/rpm.spec.html" title="">rpm.spec</a></li>
+<li><a class="post-link" href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/09/02/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E6%BA%90.html" title="">编程语言源</a></li>
+<li><a class="post-link" href="/jekyll-theme-yat/%E7%94%9F%E6%80%81/2023/06/05/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%85%BC%E5%AE%B9%E6%80%A7.html" title="">编程语言兼容性</a></li>
+<li><a class="post-link" href="/jekyll-theme-yat/%E6%8C%87%E5%AF%BC%E4%B9%A6/2022/01/21/%E6%88%91%E7%9A%84github.io%E6%98%AF%E6%80%8E%E4%B9%88%E6%90%AD%E7%9A%84.html" title="">我的github.io是怎么搭的</a></li>
+</ul>
+    </div>
+<div class="post-comments"></div></section>
+</div>
+
+
+  </section>
+  <section class="sidebar" style="margin-left: 15px;">
+    <!-- Get sidebar items --><style type="text/css" media="screen">
+.post-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+</style>
+
+<div class="post-menu">
+  <div class="post-menu-title">TOC</div>
+  <div class="post-menu-content"></div>
+</div>
+
+<script>
+  function generateContent() {
+    var menu = document.querySelector(".post-menu");
+    var menuContent =  menu.querySelector(".post-menu-content");
+    var headings = document.querySelector(".post-content").querySelectorAll("h2, h3, h4, h5, h6");
+
+    // Hide menu when no headings
+    if (headings.length === 0) {
+      return menu.style.display = "none";
+    }
+
+    // Generate post menu
+    var menuHTML = '';
+    for (var i = 0; i < headings.length; i++) {
+      var h = headings[i];
+      menuHTML += (
+        '<li class="h-' + h.tagName.toLowerCase() + '">'
+        + '<a href="#h-' + h.getAttribute('id') + '">' + h.textContent + '</a></li>');
+    }
+
+    menuContent.innerHTML = '<ul>' + menuHTML + '</ul>';
+
+    // The header element
+    var header = document.querySelector('header.site-header');
+
+    function doMenuCollapse(index, over_items) {
+      var items = menuContent.firstChild.children;
+
+      if (over_items == undefined) {
+        over_items = 20;
+      }
+
+      if (items.length < over_items) {
+        return;
+      }
+
+      var activeItem = items[index];
+      var beginItem = activeItem
+      var endItem = activeItem
+      var beginIndex = index;
+      var endIndex = index + 1;
+      while (beginIndex >= 0
+        && !items[beginIndex].classList.contains('h-h2')) {
+        beginIndex -= 1;
+      }
+      while (endIndex < items.length
+        && !items[endIndex].classList.contains('h-h2')) {
+        endIndex += 1;
+      }
+      for (var i = 0; i < beginIndex; i++) {
+        item = items[i]
+        if (!item.classList.contains('h-h2')) {
+          item.style.display = 'none';
+        }
+      }
+      for (var i = beginIndex + 1; i < endIndex; i++) {
+        item = items[i]
+        // if (!item.classList.contains('h-h2')) {
+          item.style.display = '';
+        // }
+      }
+      for (var i = endIndex; i < items.length; i++) {
+        item = items[i]
+        if (!item.classList.contains('h-h2')) {
+          item.style.display = 'none';
+        }
+      }
+    }
+
+    // Init menu collapsed
+    doMenuCollapse(-1);
+
+    // Active the menu item
+    window.addEventListener('scroll', function (event) {
+      var lastActive = menuContent.querySelector('.active');
+      var changed = true;
+      var activeIndex = -1;
+      for (var i = headings.length - 1; i >= 0; i--) {
+        var h = headings[i];
+        var headingRect = h.getBoundingClientRect();
+        var headerRect = header.getBoundingClientRect();
+        var headerTop = Math.floor(headerRect.top);
+        var headerHeight = Math.floor(headerRect.height);
+        var headerHeight = headerTop + headerHeight + 20;
+        if (headingRect.top <= headerHeight) {
+          var id = 'h-' + h.getAttribute('id');
+          var a = menuContent.querySelector('a[href="#' + id  + '"]');
+          var curActive = a.parentNode;
+          if (curActive) {
+            curActive.classList.add('active');
+            activeIndex = i;
+          }
+          if (lastActive == curActive) {
+            changed = false;
+          }
+          break;
+        }
+      }
+      if (changed) {
+        if (lastActive) {
+          lastActive.classList.remove('active');
+        }
+        doMenuCollapse(activeIndex);
+      }
+      event.preventDefault();
+    });
+  }
+  generateContent();
+</script>
+</section>
+</div>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/jekyll-theme-yat/"></data>
+
+  <div class="wrapper">
+    <div class="site-footer-inner">
+<div>Copyright © 2021-2023 StaveWu</div>
+      <div>Powered by <a title="Jekyll is a simple, blog-aware, static site
+      generator." href="https://jekyllrb.com/">Jekyll</a> &amp; <a title="Yat, yet
+      another theme." href="https://github.com/jeffreytse/jekyll-theme-yat">Yat Theme</a>.</div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
