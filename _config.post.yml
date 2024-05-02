@@ -1,9 +1,47 @@
 widgets:
-  - type: profile
-    position: left
-  - type: recent_posts
-    position: right
-  - type: categories
-    position: right
-  - type: tags
-    position: right
+    # Profile widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: profile
+        # Author name
+        author: StaveWu
+        # Author title
+        author_title: Software Engineer
+        # Author's current location
+        location: 广东深圳
+        # URL or path to the avatar image
+        avatar:
+        # Whether show the rounded avatar image
+        avatar_rounded: false
+        # Email address for the Gravatar
+        gravatar:
+        # URL or path for the follow button
+        follow_link: https://github.com/StaveWu
+    # Table of contents widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: toc
+        # Whether to show the index of each heading
+        index: true
+        # Whether to collapse sub-headings when they are out-of-view
+        collapsed: true
+        # Maximum level of headings to show (1-6)
+        depth: 3
+    # Categories widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: categories
+    # Tags widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: tags
+        # How to order tags. For example 'name' to order by name in ascending order, and '-length' to order by number of posts in each tags in descending order
+        order_by: name
+        # Amount of tags to show. Will show all if not set.
+        amount:
+        # Whether to show tags count, i.e. number of posts in the tag.
+        show_count: true

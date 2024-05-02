@@ -1,9 +1,11 @@
 ---
-layout: post
-title:  "spec依赖检查机制"
-date:   2023-07-01 23:00:02 +0800
-categories: 生态
-tag: 兼容性
+title: spec依赖检查机制
+date: 2023/07/01 23:00:02
+toc: true
+categories: 
+ - 生态
+tags: 
+ - 兼容性
 ---
 
 spec文件的依赖是怎么检查的？
@@ -14,6 +16,9 @@ spec文件的依赖是怎么检查的？
 BuildRequires:  python
 Requires:       python
 ```
+
+<!-- more -->
+
 
 具体检查方式：
 

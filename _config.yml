@@ -1,11 +1,11 @@
-title: Hexo
+title: 'Stave Blog'
 subtitle: ''
 description: ''
 keywords: null
-author: John Doe
-language: en
+author: StaveWu
+language: zh-CN
 timezone: ''
-url: http://example.com
+url: http://stavewu.github.io
 permalink: ':year/:month/:day/:title/'
 permalink_defaults: null
 pretty_urls:
