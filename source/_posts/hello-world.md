@@ -11,6 +11,8 @@ Welcome to [Hexo](https://hexo.io/)! This is your very first post. Check [docume
 $ hexo new "My New Post"
 ```
 
+测试这是一个中文文档
+
 More info: [Writing](https://hexo.io/docs/writing.html)
 
 ### Run server

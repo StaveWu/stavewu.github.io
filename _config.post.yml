@@ -1,0 +1,9 @@
+widgets:
+  - type: profile
+    position: left
+  - type: recent_posts
+    position: right
+  - type: categories
+    position: right
+  - type: tags
+    position: right
