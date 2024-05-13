@@ -166,9 +166,22 @@ search:
 # Comment plugin configurations
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Comment/
 comment:
-    type: disqus
-    # Disqus shortname
-    shortname: 'stavewu'
+    # type: disqus
+    # # Disqus shortname
+    # shortname: 'stavewu'
+    type: gitalk
+    client_id: Ov23lioFgjyhHXnvqnhr
+    client_secret: db70b317493cd8b5c6fe8d2cf7a61225a32d03d4
+    repo: stavewu.github.io
+    owner: StaveWu
+    admin:
+        - StaveWu
+    per_page: 20
+    distraction_free_mode: false
+    pager_direction: last
+    create_issue_manually: false
+    enable_hotkey: true
+    language: zh-CN
 # Donate plugin configurations
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Donation/
 #donates:
