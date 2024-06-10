@@ -3,7 +3,7 @@ title: spec依赖检查机制
 date: 2023/07/01 23:00:02
 toc: true
 categories: 
- - 生态
+ - 计算生态
 tags: 
  - 兼容性
 ---
