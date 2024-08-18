@@ -3,12 +3,14 @@ title: spec依赖检查机制
 date: 2023/07/01 23:00:02
 toc: true
 categories: 
- - 计算生态
+ - 操作系统
 tags: 
- - 兼容性
+ - 软件生态
 ---
 
-spec文件的依赖是怎么检查的？
+rpm包通过spec脚本来控制rpm包的安装过程，如果有依赖不满足，将通过yum/dnf工具提示到用户。那么spec文件的依赖是怎么检查的？
+
+<!-- more -->
 
 编译阶段：通过BuildRequires；运行阶段：通过Requires
 
@@ -16,9 +18,6 @@ spec文件的依赖是怎么检查的？
 BuildRequires:  python
 Requires:       python
 ```
-
-<!-- more -->
-
 
 具体检查方式：
 
