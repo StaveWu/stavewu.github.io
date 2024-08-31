@@ -1,23 +1,4 @@
 widgets:
-    # Profile widget configurations
-    -
-        # Where should the widget be placed, left sidebar or right sidebar
-        position: left
-        type: profile
-        # Author name
-        author: StaveWu
-        # Author title
-        author_title: Software Engineer
-        # Author's current location
-        location: 广东深圳
-        # URL or path to the avatar image
-        avatar:
-        # Whether show the rounded avatar image
-        avatar_rounded: false
-        # Email address for the Gravatar
-        gravatar:
-        # URL or path for the follow button
-        follow_link: https://github.com/StaveWu
     # Table of contents widget configurations
     -
         # Where should the widget be placed, left sidebar or right sidebar
