@@ -3,7 +3,7 @@ title: spec依赖检查机制
 date: 2023/07/01 23:00:02
 toc: true
 categories: 
- - 操作系统
+ - 软件生态
 tags: 
  - 软件生态
 ---
