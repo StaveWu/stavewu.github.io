@@ -1,6 +1,8 @@
 ---
 title: leetcode刷题随记
 date: 2024/02/05 23:00:00
+cover: /images/covers/03-computer.jpg
+thumbnail: /images/covers/03-computer.jpg
 toc: true
 categories: 
  - 编程基础

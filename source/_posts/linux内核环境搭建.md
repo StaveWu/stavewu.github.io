@@ -1,9 +1,11 @@
 ---
 title: linux内核开发环境搭建
 date: 2025/03/15 00:00:00
+cover: /images/covers/01-blog.jpg
+thumbnail: /images/covers/01-blog.jpg
 toc: true
 categories: 
- - 计算机组成
+ - 操作系统
 tags: 
  - 底层软件
 ---

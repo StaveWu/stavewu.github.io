@@ -1,11 +1,13 @@
 ---
 title: kubernetes
 date: 2024/03/05 23:00:00
+cover: /images/covers/04-pencils.jpg
+thumbnail: /images/covers/04-pencils.jpg
 toc: true
 categories: 
- - 云组件
+ - 云计算
 tags: 
- - 虚拟化
+ - 应用软件
 ---
 
 本文尝试部署kubernetes集群，并理解该组件能够做什么，什么时候使用。

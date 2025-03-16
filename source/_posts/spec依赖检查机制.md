@@ -1,9 +1,11 @@
 ---
 title: spec依赖检查机制
 date: 2023/07/01 23:00:02
+cover: /images/covers/06-newlife.jpg
+thumbnail: /images/covers/06-newlife.jpg
 toc: true
 categories: 
- - 软件生态
+ - 操作系统
 tags: 
  - 软件生态
 ---

@@ -1,9 +1,11 @@
 ---
 title: linux中断
 date: 2025/01/04 00:00:00
+cover: /images/covers/02-typewriter.jpg
+thumbnail: /images/covers/02-typewriter.jpg
 toc: true
 categories: 
- - 计算机组成
+ - 操作系统
 tags: 
  - 底层软件
 ---

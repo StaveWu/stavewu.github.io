@@ -3,12 +3,11 @@ version: 5.1.0
 # Icarus theme variant, can be "default" or "cyberpunk"
 variant: default
 # Path or URL to the website's logo
-logo: 
-    text: Stave Wu's Blogs
+logo: /images/stavewu.svg
 # Page metadata configurations
 head:
     # URL or path to the website's icon
-    favicon: /img/favicon.svg
+    favicon: /images/xiaofu.png
     # Web application manifests configuration
     # https://developer.mozilla.org/en-US/docs/Web/Manifest
     manifest:
@@ -147,16 +146,16 @@ article:
     # Whether to show updated time. For "auto", shows article update time only when page.updated is set and it is different from page.date
     update_time: true
     # Article licensing block
-    #licenses:
-    #    Creative Commons:
-    #        icon: fab fa-creative-commons
-    #        url: https://creativecommons.org/
-    #    Attribution:
-    #        icon: fab fa-creative-commons-by
-    #        url: https://creativecommons.org/licenses/by/4.0/
-    #    Noncommercial:
-    #        icon: fab fa-creative-commons-nc
-    #        url: https://creativecommons.org/licenses/by-nc/4.0/
+    licenses:
+       Creative Commons:
+           icon: fab fa-creative-commons
+           url: https://creativecommons.org/
+       Attribution:
+           icon: fab fa-creative-commons-by
+           url: https://creativecommons.org/licenses/by/4.0/
+       Noncommercial:
+           icon: fab fa-creative-commons-nc
+           url: https://creativecommons.org/licenses/by-nc/4.0/
 # Search plugin configurations
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Search/
 search:
@@ -217,11 +216,11 @@ widgets:
         # Author name
         author: StaveWu
         # Author title
-        author_title: Software Engineer
+        author_title: 
         # Author's current location
         location: 广东深圳
         # URL or path to the avatar image
-        avatar: 
+        avatar: /images/xiaofu.png
         # Whether show the rounded avatar image
         avatar_rounded: false
         # Email address for the Gravatar
