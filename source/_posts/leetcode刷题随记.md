@@ -1,11 +1,11 @@
 ---
-title: leetcode刷题随记
+title: leetcode刷题笔记
 date: 2024/02/05 23:00:00
 cover: /images/covers/03-computer.jpg
 thumbnail: /images/covers/03-computer.jpg
 toc: true
 categories: 
- - 其他
+ - 力扣
 ---
 
 本文旨在记录刷题过程中的思考，以及在给定刷题路径上做一些变式补充。
