@@ -5,7 +5,7 @@ cover: /images/covers/03-computer.jpg
 thumbnail: /images/covers/03-computer.jpg
 toc: true
 categories: 
- - 编程基础
+ - 其他
 ---
 
 本文旨在记录刷题过程中的思考，以及在给定刷题路径上做一些变式补充。

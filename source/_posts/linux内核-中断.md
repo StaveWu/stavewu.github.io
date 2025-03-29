@@ -1,13 +1,11 @@
 ---
-title: linux中断
+title: 中断
 date: 2025/01/04 00:00:00
 cover: /images/covers/02-typewriter.jpg
 thumbnail: /images/covers/02-typewriter.jpg
 toc: true
 categories: 
- - 操作系统
-tags: 
- - 底层软件
+ - linux内核
 ---
 
 本文目标：linux中断有哪些类别？分别用在什么场景？怎么使用？

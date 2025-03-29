@@ -1,13 +1,11 @@
 ---
-title: linux内核开发环境搭建
+title: 开发环境准备
 date: 2025/03/15 00:00:00
 cover: /images/covers/01-blog.jpg
 thumbnail: /images/covers/01-blog.jpg
 toc: true
 categories: 
- - 操作系统
-tags: 
- - 底层软件
+ - linux内核
 ---
 
 搭建一次内核开发环境不易，本文完整记录内核开发环境搭建过程，以供后续需要时使用。

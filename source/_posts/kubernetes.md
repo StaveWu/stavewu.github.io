@@ -6,8 +6,6 @@ thumbnail: /images/covers/04-pencils.jpg
 toc: true
 categories: 
  - 云计算
-tags: 
- - 应用软件
 ---
 
 本文尝试部署kubernetes集群，并理解该组件能够做什么，什么时候使用。

@@ -5,9 +5,7 @@ cover: /images/covers/06-newlife.jpg
 thumbnail: /images/covers/06-newlife.jpg
 toc: true
 categories: 
- - 操作系统
-tags: 
- - 软件生态
+ - 其他
 ---
 
 rpm包通过spec脚本来控制rpm包的安装过程，如果有依赖不满足，将通过yum/dnf工具提示到用户。那么spec文件的依赖是怎么检查的？
