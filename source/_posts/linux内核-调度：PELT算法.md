@@ -1,5 +1,5 @@
 ---
-title: 【调度】PELT算法
+title: 调度：PELT算法
 date: 2025/03/30 00:00:00
 cover: /images/covers/08-office.jpg
 thumbnail: /images/covers/08-office.jpg
@@ -72,7 +72,7 @@ $\frac{\Delta t_n}{T_n}$为最近的一个周期内的运行占比。其中，�
 - `[上一时刻的周期结束时间，当前时刻的周期起始时间]`这段区间的运行时长，记为$d_2$
 - `[当前时刻的周期起始时间，now]`这段区间的运行时长，记为$d_3$
 
-![image-20250331224518136](/images/调度-PELT算法/image-20250331224518136.png)
+![](/images/调度：PELT算法/image-20250331224518136.png)
 
 则$\frac{\Delta t_n}{T_n}$可推导如下：
 
