@@ -6,7 +6,7 @@ author: StaveWu
 language: zh-CN
 timezone: ''
 url: http://stavewu.github.io
-permalink: ':year/:month/:day/:title/'
+permalink: ':title/'
 permalink_defaults: null
 pretty_urls:
   trailing_index: true
@@ -61,3 +61,5 @@ ignore: null
 theme: icarus
 deploy:
   type: ''
+sitemap:
+  path: sitemap.xml
