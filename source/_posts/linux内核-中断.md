@@ -6,6 +6,8 @@ thumbnail: /images/covers/02-typewriter.jpg
 toc: true
 categories: 
  - linux内核
+tags:
+ - 中断
 ---
 
 本文目标：linux中断有哪些类别？分别用在什么场景？怎么使用？

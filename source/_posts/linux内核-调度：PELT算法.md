@@ -6,6 +6,8 @@ thumbnail: /images/covers/08-office.jpg
 toc: true
 categories: 
  - linux内核
+tags:
+ - 调度
 ---
 
 PELT全称是per-entity load tracking，翻译过来是一种针对entity的负载追踪技术，这里entity是指内核调度模块内的`struct sched_entity`，也就是调度单元的基本抽象。而所谓负载追踪，其本质是提供一种衡量负载的指标以及在运行过程中动态计算该指标的方法。

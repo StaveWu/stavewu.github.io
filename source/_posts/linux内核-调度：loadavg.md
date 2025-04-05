@@ -6,6 +6,8 @@ thumbnail: /images/covers/09-diary.jpg
 toc: true
 categories: 
  - linux内核
+tags:
+ - 调度
 ---
 
 前面我们了解了[PELT算法](/linux%E5%86%85%E6%A0%B8-%E8%B0%83%E5%BA%A6%EF%BC%9APELT%E7%AE%97%E6%B3%95/)，它提供了一种计算任务负载的方式。在linux系统中，除了PELT外，还有另一种观测负载的方式 —— loadavg，具体可以查看`/proc/loadavg`文件：

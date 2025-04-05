@@ -6,6 +6,8 @@ thumbnail: /images/covers/01-blog.jpg
 toc: true
 categories: 
  - linux内核
+tags:
+ - 环境搭建
 ---
 
 
