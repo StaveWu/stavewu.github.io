@@ -1,6 +1,6 @@
 sidebar:
     # Right sidebar configurations
-    right:
+    left:
         # Whether the sidebar sticks to the top when page scrolls
         sticky: true
 
@@ -8,12 +8,12 @@ widgets:
     # Recent posts widget configurations
     -
         # Where should the widget be placed, left sidebar or right sidebar
-        position: right
+        position: left
         type: recent_posts
     # Table of contents widget configurations
     -
         # Where should the widget be placed, left sidebar or right sidebar
-        position: right
+        position: left
         type: toc
         # Whether to show the index of each heading
         index: true

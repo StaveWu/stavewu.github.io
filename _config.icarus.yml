@@ -218,7 +218,7 @@ widgets:
         # Author title
         author_title: 
         # Author's current location
-        location: 广东深圳
+        location: ShenZhen, GuangDong
         # URL or path to the avatar image
         avatar: /images/xiaofu.png
         # Whether show the rounded avatar image
