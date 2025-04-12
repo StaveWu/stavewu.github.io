@@ -11,7 +11,7 @@ tags:
  - PSI
 ---
 
-PSI全称为Pressure Stall Information，是一种衡量系统负载压力的方法。PSI所要测量的对象包括cpu、内存和io三部分（在近期的内核6.12+中新加入了irqtime），其测量的粒度是cgroup级别的，当cgroup层级为1时，则测量的是整个系统的负载。对于系统的负载，PSI将压力信息输出在/proc/pressure/{cpu,memory,io}，而对于cgroup的负载，压力信息则输出到/sys/fs/cgroup/xxx/{cpu,memory,io}.pressure，具体信息格式为：
+PSI全称为Pressure Stall Information，是一种衡量系统负载压力的方法。PSI所要测量的对象包括cpu、memory和io三部分（在近期的内核6.12+中新加入了irqtime），其测量的粒度是cgroup级别的，当cgroup层级为1时，则测量的是整个系统的负载。对于系统的负载，PSI将压力信息输出在/proc/pressure/{cpu,memory,io}，而对于cgroup的负载，压力信息则输出到/sys/fs/cgroup/xxx/{cpu,memory,io}.pressure，具体输出格式为：
 
 <!-- more -->
 
@@ -27,13 +27,20 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=0
 
 ## 观测指标
 
-如前所述，PSI将负载压力从观测对象（cpu/memory/io）、观测粒度（system/cgroup）以及观测类别（some/full）三个维度做了细分，每一种观测对象、粒度，其观测的信息和手法基本一致，唯一需要明确的是观测类别中some和full的差异。
+已知PSI将负载压力从观测对象（cpu/memory/io）、观测粒度（system/cgroup）以及观测类别（some/full）三个维度做了细分，每一种观测对象、粒度，其观测的信息和手法基本一致，唯一需要明确的是观测类别中some和full的差异。
 
-一个cgroup中有多个任务，任务之间有概率因争夺有限的cpu、memory、io资源而导致相互阻塞等待，具体阻塞等待的程度如何，通过some、full来表征。其中，some表示相同cgroup中的一些任务发生了阻塞，而full则表示整个cgroup中的所有任务都发生了阻塞。如下图所示：
+一个cgroup中有多个任务，任务之间有概率因争夺有限的cpu、memory、io资源而导致相互阻塞，具体阻塞等待的程度如何，通过some、full来表征。**some、full都是针对单个CPU而言**，其中：
 
-![](/images/调度：PSI机制/image-20250405164354274.png)
+- some表示任意时刻某CPU上相同cgroup中的一些任务发生了阻塞；
+- 而full则表示任意时刻某CPU上相同cgroup中的所有任务都发生了阻塞
 
-PSI正是通过识别这样的状态，并统计其阻塞时长和占比，从而计算出cgroup的负载压力。
+具体some、full区间如下图绿/蓝色块所示（假设task1/2/3均属于同一cgroup）：
+
+![](/images/调度：PSI机制/image-20250412091525471.png)
+
+PSI正是通过识别这样的状态，并统计其阻塞时长和相对于整个cgroup运行时长的占比，从而计算出cgroup的负载压力。
+
+![](/images/调度：PSI机制/image-20250412092325142.png)
 
 ## 观测原理
 
@@ -41,7 +48,7 @@ PSI正是通过识别这样的状态，并统计其阻塞时长和占比，从�
 
 ### some/full状态识别
 
-以前面示意图为例，已知cgroup中总的任务数为3，对于some区间，发生stall的任务数总是小于等于3，但大于0；对于full区间，发生stall的任务数总是等于3。如果任意时刻处于stall的任务数已知，那么根据该数量即可区分some、full。PSI代码实现如下所示：
+以前面示意图为例，已知总任务数为3，对于some区间，发生stall的任务数总是小于等于3，但大于0；对于full区间，发生stall的任务数总是等于3。如果任意时刻处于stall的任务数能够统计出来，那么根据该数量即可区分some、full。PSI代码实现如下所示：
 
 ```c
 // file: kernel/sched/psi.c
@@ -64,7 +71,7 @@ static u32 test_states(unsigned int *tasks, u32 state_mask)
 
 ### tasks数量统计
 
-首先准备一个`tasks`数组，因为要统计多种类别的tasks，故对该数组的每个元素位置进行定义：
+首先准备一个per-cpu类型的`tasks`数组，因为要统计多种类别的tasks，故对该数组的每个元素位置进行定义：
 
 ```c
 // file: include/linux/psi_types.h
@@ -82,7 +89,7 @@ struct psi_group_cpu {
 }
 ```
 
-接着定义4个任务状态位，通过该状态位来追踪任务状态：
+接着定义4个任务状态位，通过其追踪任务状态：
 
 ```c
 // file: include/linux/psi_types.h
@@ -96,7 +103,7 @@ struct psi_group_cpu {
 #define TSK_ONCPU	(1 << NR_PSI_TASK_COUNTS)
 ```
 
-通过这些状态，我们可以很容易对`tasks`数组对应的位置计数：
+有了这些状态，我们可以很容易对`tasks`数组对应的位置计数：
 
 ```c
 static void psi_group_change(struct psi_group *group, int cpu,
@@ -121,7 +128,7 @@ static void psi_group_change(struct psi_group *group, int cpu,
 
 具体效果如下所示：
 
-![](/images/调度：PSI机制/image-20250405172429224.png)
+![](/images/调度：PSI机制/image-20250412092544679.png)
 
 剩下要解决的就是为`psi_group_change`寻找合适的位置埋点。以cpu为例，其埋点位置位于任务enqueue、dequeue的时候：kernel/sched/core.c
 
@@ -140,13 +147,13 @@ dequeue_task
             psi_group_change(..., clear, set, ...);
 ```
 
-memory和io的埋点位置虽然和cpu有差异，但大体原理一致。
+memory和io的埋点位置虽和cpu有差异，但大体原理一致，这里不具体展开。
 
 ### some/full状态使用
 
-了解完tasks统计和some/full状态识别后，剩下就是计算负载了。
+了解完some/full状态识别和tasks统计后，剩下就是计算负载了。
 
-负载的计算依赖时间统计，为此，和`tasks`数组类似，PSI也声明了一个`times`数组，用来容纳some/full的累积时间信息：
+负载计算依赖时间统计，为此，和`tasks`数组类似，PSI也声明了一个`times`数组，用来容纳some/full的累积时间信息：
 
 ```c
 // file: include/linux/psi_types.h
@@ -190,7 +197,9 @@ static void record_times(struct psi_group_cpu *groupc, u64 now)
 }
 ```
 
-![](/images/调度：PSI机制/image-20250405180114009.png)
+所以`tasks`和`times`的总体关系可以描绘如下：
+
+![](/images/调度：PSI机制/image-20250412092841295.png)
 
 `times`数组是时间累积，还不是最终输出的10、60、300s的负载压力值，那它们之间是什么时候做的转换，怎么转换？PSI通过一个delay work（延迟任务）来做，定时将`times`的累计值“fold”为负载。
 
@@ -262,11 +271,5 @@ static u32 test_states(unsigned int *tasks, u32 state_mask)
 }
 ```
 
-步骤2中，如果打开`calc_avgs`会看到熟悉的`calc_load`函数，该函数来自loadavg。也就是说，PSI最终计算10/60/300s三个时间段负载的方法仍然是沿用了loadavg那一套。
-
-
-
-## 参考
-
-1. [纯干货，PSI 原理解析与应用](https://www.cnblogs.com/Linux-tech/p/12961296.html)
+步骤2中，如果打开`calc_avgs`，将会看到熟悉的`calc_load`函数，该函数来自loadavg。也就是说，PSI最终计算10/60/300s三个时间段负载的方法仍然是沿用了loadavg那一套。
 
