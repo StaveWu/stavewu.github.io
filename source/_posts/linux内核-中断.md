@@ -212,13 +212,13 @@ softirq类别介绍：
 - NET_TX_SOFTIRQ、NET_RX_SOFTIRQ：网络收发报文的软中断
 - BLOCK_SOFTIRQ：块设备软中断
 
-从这里可以看出，softirq是内核编译时就定义好的，运行时不能添加或删除。
+从这里可以看出，**softirq是内核编译时就定义好的，运行时不能添加或删除。**
 
 
 
-softirq怎么用？
+**softirq怎么用？**
 
-1、注册softirq：kernel/softirq.c
+**1、注册softirq：**kernel/softirq.c
 
 ```c
 void open_softirq(int nr, void (*action)(void))
@@ -227,7 +227,7 @@ void open_softirq(int nr, void (*action)(void))
 }
 ```
 
-2、触发softirq：kernel/softirq.c
+**2、触发softirq：**kernel/softirq.c
 
 ```c
 void raise_softirq(unsigned int nr)
@@ -240,39 +240,32 @@ void raise_softirq(unsigned int nr)
 }
 ```
 
-local_irq_save/restore是做什么用的？
+注意这里raise_softirq_irqoff**不会立马执行action回调**，而是会等待合适的时机执行（见下文）。
 
-- local_irq_save(flags)：将当前的中断状态保存到参数flags中，为后续恢复中断状态做准备。
-- local_irq_restore(flags)：恢复中断状态
-- local_irq_disable()：禁止中断
-- local_irq_enable()：开启中断
-
-以上接口仅能处理本处理器的中断，无法处理其他处理器的中断。local_irq_disable/enable不能嵌套使用，local_irq_save/restore可以。
-
-以上接口也无法作用于不可屏蔽中断（NMI，Non Maskable Interrupt）
-
-以上接口作用所有中断，还有一组仅作用于单个中断的接口：
-
-```c
-extern void enable_irq(unsigned int irq);
-extern void disable_irq(unsigned int irq);
-```
+> 关于local_irq_save/restore，这是一组开关中断的函数，linux内核里涉及开关中断的函数有：
+>
+> - local_irq_save(flags)：保存当前中断状态并禁止中断 -- 作用于本地处理器，不可作用于不可屏蔽中断（NMI，Non Maskable Interrupt）
+> - local_irq_restore(flags)：恢复中断状态并开启中断 -- 作用于本地处理器，不可作用于不可屏蔽中断（NMI，Non Maskable Interrupt
+> - local_irq_disable()：禁止中断，不保存状态 -- 作用于本地处理器，不可作用于不可屏蔽中断（NMI，Non Maskable Interrupt）
+> - local_irq_enable()：开启中断，不恢复之前的状态 -- 作用于本地处理器，不可作用于不可屏蔽中断（NMI，Non Maskable Interrupt
+> - disable_irq(unsigned int irq)：禁止指定中断
+> - enable_irq(unsigned int irq)：开启指定中断
 
 
 
-3、执行softirq：
+**3、执行softirq：**
 
-- 通过中断处理程序执行
-- 通过软中断线程执行
-- 通过local_bh_enable函数开启softirq时执行
+- 在硬中断退出前执行
+- 由软中断线程ksoftirqd执行
+- 在调用local_bh_enable函数时执行
 
 以下针对每一条路径进行说明：
 
-通过中断处理程序执行：`irq_exit -> __irq_exit_rcu -> invoke_softirq -> __do_softirq -> handle_softirqs`
+（1）在硬中断退出前执行：`irq_exit -> __irq_exit_rcu -> invoke_softirq -> __do_softirq -> handle_softirqs`
 
-通过软中断线程执行：
+（2）由软中断线程ksoftirqd执行：
 
-每个处理器都有一个软中断线程
+每个处理器都有一个软中断线程ksoftirqd
 
 ```bash
 root@ubuntu-server:~# ps -ef | grep irq
@@ -309,13 +302,11 @@ static void run_ksoftirqd(unsigned int cpu)
 }
 ```
 
-通过local_bh_enable函数开启软中断时执行：
-
-`local_bh_enable -> __local_bh_enable_ip -> __do_softirq -> handle_softirqs`
+（3）在调用local_bh_enable函数时执行：`local_bh_enable -> __local_bh_enable_ip -> __do_softirq -> handle_softirqs`
 
 
 
-以上3个softirq执行路径最终都调用了handle_softirqs，其实现为：
+可以看到，以上3个softirq执行路径最终都调用了`handle_softirqs`，该函数实现如下：
 
 ```c
 static void handle_softirqs(bool ksirqd)
@@ -358,8 +349,8 @@ restart:
 
 tasklet是基于softirq扩展实现的，但tasklet和softirq又有区别：
 
-- 可在运行时添加或删除
-- 同一时刻只会在一个处理器上执行，不要求处理函数是可以重入的
+- tasklet可在运行时添加或删除
+- tasklet同一时刻只会在一个处理器上执行，不要求处理函数是可以重入的
 
 tasklet数据结构：include/linux/interrupt.h
 
@@ -390,7 +381,7 @@ static DEFINE_PER_CPU(struct tasklet_head, tasklet_vec);  // 低优先级tasklet
 static DEFINE_PER_CPU(struct tasklet_head, tasklet_hi_vec);  // 高优先级tasklet链表
 ```
 
-1、定义tasklet：
+**1、定义tasklet：**
 
 ```c
 // 静态方式，include/linux/interrupt.h
@@ -402,7 +393,7 @@ void tasklet_init(struct tasklet_struct *t,
 		  void (*func)(unsigned long), unsigned long data)
 ```
 
-2、注册tasklet（加入到链表尾部）：
+**2、注册tasklet**（加入到链表尾部）：
 
 ```c
 static inline void tasklet_schedule(struct tasklet_struct *t)
@@ -411,7 +402,7 @@ static inline void tasklet_hi_schedule(struct tasklet_struct *t)
     // raise_softirq_irqoff(HI_SOFTIRQ)
 ```
 
-3、执行tasklet：
+**3、执行tasklet：**
 
 ```c
 static void tasklet_action_common(struct tasklet_head *tl_head,
@@ -489,7 +480,7 @@ root       11529       2  0 13:19 ?        00:00:00 [kworker/u256:1-events_power
 root       11534       2  0 13:25 ?        00:00:00 [kworker/u256:0-events_power_efficient]
 ```
 
-1、定义work：include/linux/workqueue.h
+**1、定义work：**include/linux/workqueue.h
 
 ```c
 // 静态方式，n为变量名称，f为处理函数
@@ -501,7 +492,7 @@ root       11534       2  0 13:25 ?        00:00:00 [kworker/u256:0-events_power
 #define INIT_DELAYED_WORK(_work, _func)
 ```
 
-2、注册work：include/linux/workqueue.h
+**2、注册work：**include/linux/workqueue.h
 
 ```c
 // 注册到全局队列
@@ -544,7 +535,7 @@ workqueue整体设计涉及以下几个概念：
 - worker_pool：持有多个workers
 - pool_workqueue：类似一个中介，持有1个worker_pool和1个workqueue（谁持有了我）
 
-工人线程处理工作：kernel/workqueue.c
+**3、执行work：**kernel/workqueue.c
 
 ```c
 static int worker_thread(void *__worker)
