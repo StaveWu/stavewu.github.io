@@ -4,13 +4,34 @@ date: 2025/06/21 00:00:00
 cover: /images/covers/08-office.jpg
 thumbnail: /images/covers/08-office.jpg
 toc: true
-categories: 
+categories:
  - linux内核
 tags:
  - watchdog
 ---
 
-关于watchdog在OS下有三个参数：
+hard lockup是内核常见的维测手段之一，了解hard lockup的机制有助于在看到该类报错后明确定位方向。本文要搞清楚：
+
+- hard lockup是什么？
+- hard lockup是怎么拉起的？
+- hard lockup是怎么监控的？
+
+<!-- more -->
+
+## hard lockup是什么？
+
+hard lockup指CPU长时间（默认10秒）不响应中断，包括不可屏蔽中断（NMI）。
+
+一种简单的hard lockup复现：
+
+```c
+// 内核函数里执行
+local_irq_disable();
+mdelay(100000);  // 100s，关中断时间过长，引发hard lockup
+local_irq_enable();
+```
+
+具体hard lockup判定时长由watchdog的几个参数决定（不只是hard lockup，soft lockup也受这些参数控制）：
 
 ```bash
 root@ubuntu-server:/proc/sys/kernel# ll watchdog*
@@ -21,12 +42,7 @@ root@ubuntu-server:/proc/sys/kernel# ll watchdog*
 
 其中，watchdog是使能开关，watchdog_cpumask指要使能哪些cpu上的watchdog，watchdog_thresh是喂狗超时阈值。
 
-本文要搞清楚：
 
-- hard lockup是怎么拉起的？
-- hard lockup是怎么监控的？
-
-<!-- more -->
 
 ## hard lockup是怎么拉起的？
 
@@ -211,7 +227,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
 }
 ```
 
-## 协同关系总结
+## 总结
 
 touch_nmi_watchdog、timer、perf event的协同关系总结如下：
 
